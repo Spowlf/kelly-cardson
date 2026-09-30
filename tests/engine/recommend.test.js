@@ -15,7 +15,7 @@ test('ranks her cards by miles, ties by most cap left, and gives a method hint',
   const ppv = out.results[0];
   assert.equal(ppv.best.method, 'mobile_tap');
   assert.equal(ppv.best.miles, 180);
-  assert.equal(ppv.methodHint, 'Pay by phone, not the plastic card');
+  assert.equal(ppv.methodHint, 'Pay by phone, not the plastic card.');
 });
 
 test('ties with equal cap left follow her priority order', () => {
@@ -53,7 +53,7 @@ test('online purchase compares online methods only', () => {
   const citi = out.results[0];
   assert.deepEqual(Object.keys(citi.byMethod).sort(), ['in_app_wallet', 'online_card_entry']);
   assert.equal(citi.best.method, 'online_card_entry');
-  assert.equal(citi.methodHint, 'Pay by entering the card number, not Apple Pay in the app');
+  assert.equal(citi.methodHint, 'Pay by entering the card number, not Apple Pay in the app.');
 });
 
 test('given a method, only that method is used', () => {

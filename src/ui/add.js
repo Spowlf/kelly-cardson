@@ -1,6 +1,6 @@
 // Quick add: number pad for the amount, pick a past merchant to fill everything from last time, save.
 
-import { h, chips, categorySelect, field, toast, money, shortName, METHOD_NAMES, CHANNELS, fill } from './dom.js';
+import { h, chips, categorySelect, field, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, fill } from './dom.js';
 import { state, saveTxn, deleteTxn, findMerchant, lastTxnAt, merchantSuggestions } from '../db/repo.js';
 import { today } from '../engine/index.js';
 
@@ -21,7 +21,7 @@ export function renderAdd(root, { go }) {
   const saveButton = h('button', { type: 'submit', class: 'button primary save' });
   const summary = h('p', { class: 'save-summary' });
   const renderSummary = () => fill(summary, 
-    h('span', {}, 'On ', h('strong', {}, shortName(state.cardsById[f.cardId])), `, ${METHOD_NAMES[f.method].toLowerCase()}`),
+    h('span', {}, 'On ', h('strong', {}, shortName(state.cardsById[f.cardId])), `, ${methodPhrase(f.method)}`),
     h('button', { type: 'button', class: 'change', onclick: () => document.getElementById('add-details').scrollIntoView({ behavior: 'smooth' }) }, 'Change'));
   const merchantInput = h('input', {
     type: 'text', placeholder: 'Merchant', autocomplete: 'off', autocapitalize: 'words',

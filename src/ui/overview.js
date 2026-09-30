@@ -53,9 +53,9 @@ export function renderOverview(root, { go }) {
             h('p', { class: 'list-sub' }, p.cardNames.join(', '))),
           h('p', { class: 'pool-num' }, p.points.toLocaleString('en-SG'), h('span', { class: 'unit' }, `${miles(p.miles)} miles`))),
         h('p', { class: p.blocksReady ? 'hint' : 'muted small' }, p.blocksReady
-          ? `${p.blocksReady} transfer block${p.blocksReady > 1 ? 's' : ''} of ${p.blockMiles.toLocaleString('en-SG')} miles ready to transfer`
-          : `${miles(p.milesToNextBlock)} miles to the next ${p.blockMiles.toLocaleString('en-SG')}-mile transfer block`),
-        p.expiresAround ? h('p', { class: 'muted small' }, `Oldest points expire around ${formatDay(p.expiresAround)}${p.expiryNote ? ` (${p.expiryNote})` : ''}.`) : null,
+          ? `${p.blocksReady} transfer block${p.blocksReady > 1 ? 's' : ''} of ${p.blockMiles.toLocaleString('en-SG')} miles ready to transfer.`
+          : `${miles(p.milesToNextBlock)} miles to the next ${p.blockMiles.toLocaleString('en-SG')}-mile transfer block.`),
+        p.expiresAround ? h('p', { class: 'muted small' }, `Oldest points expire around ${formatDay(p.expiresAround)}.${p.expiryNote ? ` ${p.expiryNote}` : ''}`) : null,
         h('p', { class: 'muted small' }, p.asOf ? `Balance of ${p.balancePoints.toLocaleString('en-SG')} entered for ${formatDay(p.asOf)}, plus purchases since.` : 'Estimated from logged purchases. Enter the balance from the bank app to make it exact.'),
         h('button', { type: 'button', class: 'text-button', onclick: () => balanceForm(p, render) }, 'Update balance'))))),
 
@@ -103,14 +103,14 @@ function balanceForm(p, render) {
     onsubmit: async (e) => {
       e.preventDefault();
       const n = Number(points.value.replace(/[^\d]/g, ''));
-      if (!(n >= 0) || points.value.trim() === '') { points.setCustomValidity('Enter the balance'); points.reportValidity(); return; }
+      if (!(n >= 0) || points.value.trim() === '') { points.setCustomValidity('Enter the balance.'); points.reportValidity(); return; }
       await addBalance({ pool: p.pool, points: n, asOf: asOf.value || today() });
       s.close();
       toast('Balance saved');
       render();
     },
   },
-  field(`Balance (${p.currency})`, points, 'From the bank app. Purchases dated after the date below are added on top.'),
+  field(`Balance in ${p.currency}`, points, 'From the bank app. Purchases dated after the date below are added on top.'),
   field('Balance as of', asOf),
   h('div', { class: 'sheet-actions' }, h('button', { type: 'submit', class: 'button primary' }, 'Save balance'))));
 }

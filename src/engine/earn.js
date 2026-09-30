@@ -12,7 +12,7 @@ const round4 = (x) => Math.round(x * 10000) / 10000;
 
 export function formatSgd(cents) {
   const sgd = cents / 100;
-  return `S$${Number.isInteger(sgd) ? sgd.toLocaleString('en-SG') : sgd.toFixed(2)}`;
+  return `S$${sgd.toLocaleString('en-SG', Number.isInteger(sgd) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const indexCache = new WeakMap();
@@ -33,6 +33,8 @@ export const cycleOf = (card, userCard, date) => cycleFor(date, card.cap_period,
 
 // A cap's name as she reads it: its label, or its id with spaces ("petrol_contactless" -> "petrol contactless").
 export const capName = (card, id) => card.caps?.[id]?.label || id.replace(/_/g, ' ');
+
+const capitalize = (s) => s[0].toUpperCase() + s.slice(1);
 
 const periodWord = (card) => (card.cap_period === 'statement_month' ? 'this statement month' : 'this month');
 
@@ -85,8 +87,8 @@ function baseCents(raw, whole, blocks, state, pools) {
 function zeroReason(block, rankMiles) {
   const size = formatSgd(toCents(block.size_sgd));
   return isPooled(block)
-    ? `Added to this month's total (earns per ${size} of it): about ${rankMiles} miles over the month`
-    : `Under ${size} earns nothing (rounded down to ${size} blocks)`;
+    ? `Added to this month's total, which earns per ${size}: about ${rankMiles} miles over the month.`
+    : `Under ${size} earns nothing: it rounds down to ${size} blocks.`;
 }
 
 function bonusOption(card, rule, p, state, blocks, baseMpd) {
@@ -138,13 +140,13 @@ function bonusOption(card, rule, p, state, blocks, baseMpd) {
   if (bucket?.hard_limit && spendAfter > capCents) {
     asBase();
     avoid = true;
-    reason = `Would take this category past ${formatSgd(capCents)}, which may drop it all to ${baseMpd} mpd. Use another card`;
+    reason = `Would take this category past ${formatSgd(capCents)}, which may drop it all to ${baseMpd} mpd. Use another card.`;
   } else if (short > 0 && bonus > 0 && bucket.rank_until_min_met === 'base') {
     pendingBonus = bonus;
     asBase();
-    reason = `${rule.mpd} mpd once ${formatSgd(short)} more is spent in this category`;
+    reason = `${rule.mpd} mpd once ${formatSgd(short)} more is spent in this category.`;
   } else if (short > 0 && bonus > 0) {
-    warnings.push(`Needs ${formatSgd(short)} more in this category ${periodWord(card)} for ${rule.mpd} mpd`);
+    warnings.push(`Needs ${formatSgd(short)} more in this category ${periodWord(card)} for ${rule.mpd} mpd.`);
     conditional = true;
   }
 
@@ -152,11 +154,12 @@ function bonusOption(card, rule, p, state, blocks, baseMpd) {
   expected ??= miles;
 
   if (!reason) {
-    if (!bucket) reason = `${rule.mpd} mpd, no cap`;
-    else if (left === 0) reason = `${capName(card, bucketId)} cap full (${formatSgd(capCents)}): ${baseMpd} mpd`;
+    if (!bucket) reason = `${rule.mpd} mpd, no cap.`;
+    else if (left === 0) reason = `${capitalize(capName(card, bucketId))} cap of ${formatSgd(capCents)} is full: ${baseMpd} mpd.`;
     else {
       reason = `${formatSgd(left)} of ${formatSgd(capCents)} ${capName(card, bucketId)} cap left`;
       if (capUse < counted) reason += `: ${formatSgd(bonus)} at ${rule.mpd} mpd, ${formatSgd(base)} at ${baseMpd} mpd`;
+      reason += '.';
     }
   }
 
@@ -188,7 +191,7 @@ function evaluate(card, p, state, ctx) {
     for (const id of p.bucket ? [p.bucket] : Object.keys(card.caps || {})) delta.buckets[id] = { used: p.cents, spend: p.cents };
     const counted = roundTxn(p.cents, blocks.base);
     const miles = round2((counted / 100) * baseMpd);
-    Object.assign(result, { baseSgd: counted / 100, miles, rankMiles: miles, reason: 'Catch-up entry, counted against caps at the base rate' });
+    Object.assign(result, { baseSgd: counted / 100, miles, rankMiles: miles, reason: 'Catch-up entry, counted against caps at the base rate.' });
     return { result, delta };
   }
 
@@ -197,7 +200,7 @@ function evaluate(card, p, state, ctx) {
     return { result, delta };
   }
   if (mccInList(p.mcc, card.no_points?.mccs) || merchantMatches(p.merchant, card.no_points?.merchants)) {
-    result.reason = 'Earns nothing on this card (excluded)';
+    result.reason = 'Earns nothing on this card: this kind of purchase is excluded.';
     result.unconfirmed ||= !!card.no_points.needs_verification;
     return { result, delta };
   }
@@ -248,7 +251,7 @@ function evaluate(card, p, state, ctx) {
     });
     result.warnings.push(...best.warnings);
     result.unconfirmed ||= !!(best.matchUnconfirmed || best.rule.needs_verification || best.unconfirmed);
-    if (best.rule.promotion && best.rule.valid_until) result.warnings.push(`Promotion ends ${formatDay(best.rule.valid_until)}`);
+    if (best.rule.promotion && best.rule.valid_until) result.warnings.push(`Promotion ends ${formatDay(best.rule.valid_until)}.`);
     for (const d of best.rule.disputed || []) {
       if (d.resolved || answers[d.id]?.answer === 'yes' || !disputeApplies(d, p)) continue;
       result.warnings.push(d.note);
@@ -265,7 +268,7 @@ function evaluate(card, p, state, ctx) {
       miles: round2((counted / 100) * baseMpd),
       rankMiles: round2((expected / 100) * baseMpd),
       baseSgd: counted / 100,
-      reason: counted === 0 && p.cents > 0 ? zeroReason(blocks.base, round2((expected / 100) * baseMpd)) : `Not a bonus purchase: ${baseMpd} mpd`,
+      reason: counted === 0 && p.cents > 0 ? zeroReason(blocks.base, round2((expected / 100) * baseMpd)) : `Not a bonus purchase: ${baseMpd} mpd.`,
     });
     delta.pools = pools;
   }
@@ -275,17 +278,17 @@ function evaluate(card, p, state, ctx) {
   }
 
   for (const rule of notRecurring) {
-    if (rule.mpd > result.mpd) result.warnings.push(`Recurring payments don't earn the ${rule.mpd} mpd bonus on this card: ${result.baseMpd} mpd`);
+    if (rule.mpd > result.mpd) result.warnings.push(`Recurring payments don't earn the ${rule.mpd} mpd bonus on this card: ${result.baseMpd} mpd.`);
   }
 
   for (const rule of skipped) {
-    if (rule.mpd > result.mpd) result.warnings.push(`Bonus ${rule.mpd} mpd not counted: ${rule.condition}. Mark it met if it is.`);
+    if (rule.mpd > result.mpd) result.warnings.push(`${rule.mpd} mpd bonus not counted. ${rule.condition}. Mark it met in My cards if it is.`);
   }
 
   if (card.min_spend && result.bonusSgd > 0) {
     const short = toCents(card.min_spend.sgd) - (state.cardSpend + p.cents);
     if (short > 0) {
-      result.warnings.push(`Needs ${formatSgd(short)} more ${periodWord(card)} on this card, or all its spend earns ${baseMpd} mpd`);
+      result.warnings.push(`Needs ${formatSgd(short)} more ${periodWord(card)} on this card, or all its spend earns ${baseMpd} mpd.`);
       result.conditional = true;
       result.unconfirmed ||= !!card.min_spend.needs_verification;
     }
@@ -294,10 +297,10 @@ function evaluate(card, p, state, ctx) {
   const hasCycleRules = Object.keys(card.caps || {}).length > 0 || !!card.min_spend || isPooled(blocks.bonus) || isPooled(blocks.base);
   if (hasCycleRules && p.date) {
     const cycle = cycleOf(card, userCard, p.date);
-    if (cycle.assumed) result.warnings.push('Add the statement day for this card so its caps reset on the right date');
+    if (cycle.assumed) result.warnings.push('Add the statement day for this card so its caps reset on the right date.');
     const delay = settings.postingDelayDays ?? DEFAULT_SETTINGS.postingDelayDays;
     if (card.cap_basis !== 'transaction_date' && addDays(p.date, delay) >= cycle.resetDate) {
-      result.warnings.push(`May count next month: it may post after the cap resets on ${formatDay(cycle.resetDate)}`);
+      result.warnings.push(`May count next month: it may post after the cap resets on ${formatDay(cycle.resetDate)}.`);
     }
   }
 

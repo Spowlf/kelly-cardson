@@ -56,7 +56,7 @@ export function recommend({ purchase, cards, myCards, categories, settings, txns
       name: card.name,
       best,
       byMethod,
-      methodHint: worst.rankMiles < best.rankMiles ? `Pay by ${METHOD_LABELS[best.method]}, not ${METHOD_LABELS[worst.method]}` : null,
+      methodHint: worst.rankMiles < best.rankMiles ? `Pay by ${METHOD_LABELS[best.method]}, not ${METHOD_LABELS[worst.method]}.` : null,
       fallback: !best.ruleId || best.capLeftSgd === 0,
       order,
     });

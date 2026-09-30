@@ -1,6 +1,6 @@
 // My cards: her wallet in priority order, the full card list to browse, add/edit forms, settings.
 
-import { h, field, sheet, toast, money, shortName, unconfirmedTag, METHOD_NAMES, fill } from './dom.js';
+import { h, field, sheet, toast, money, sgd, shortName, unconfirmedTag, methodPhrase, fill } from './dom.js';
 import { exportBackup, importBackup } from './backup.js';
 import { state, addMyCard, updateMyCard, removeMyCard, moveMyCard, hasCard, setSetting } from '../db/repo.js';
 import { formatDay, today, DEFAULT_SETTINGS } from '../engine/index.js';
@@ -38,39 +38,85 @@ function walletRow(c, i, render) {
     h('span', { class: 'reorder' }, move(-1, 'Move up', i === 0), move(1, 'Move down', i === state.myCards.length - 1)));
 }
 
-const ruleSummary = (r) => {
-  const methods = r.methods.length >= 6 ? 'any way to pay' : r.methods.map((m) => METHOD_NAMES[m]).join(', ');
-  return `${r.mpd} mpd, ${methods}`;
-};
+const methodList = (methods) => (methods.length >= 6 ? 'any way to pay' : methods.map(methodPhrase).join(', '));
+const lowerFirst = (s) => s[0].toLowerCase() + s.slice(1);
+const period = (card) => (card.cap_period === 'statement_month' ? 'a statement month' : 'a month');
+
+// Short, parallel values for the facts at the top of the card sheet.
+function baseRate({ local, fcy }) {
+  return local === fcy ? `${local} mpd, local and foreign currency` : `${local} mpd local, ${fcy} mpd foreign currency`;
+}
+function rounding(block, card) {
+  const size = sgd(block.size_sgd);
+  if (block.type === 'per_txn_nearest') return `To the nearest ${size}, per purchase`;
+  if (block.type === 'monthly_pooled_floor') return `Down to the nearest ${size}, on the ${card.cap_period === 'statement_month' ? 'statement month' : 'month'}'s total`;
+  return `Down to the nearest ${size}, per purchase`;
+}
+function minSpend(card) {
+  const m = card.min_spend;
+  const failure = m.failure === 'all_base' ? `, or everything earns ${card.base_mpd.local} mpd` : '';
+  return `${sgd(m.sgd)} ${period(card)}${failure}`;
+}
+
+// Source URLs as linked names: "Mainly Miles review", "MileLion".
+const SITES = { 'mainlymiles.com': 'Mainly Miles', 'milelion.com': 'MileLion' };
+function sources(source) {
+  const urls = source.match(/https?:\/\/[^\s;,)]+/g) || [];
+  const links = urls.map((url) => {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    const kind = /review/.test(url) ? ' review' : /\/credit-cards\/?$/.test(url) ? ' card comparison' : '';
+    const name = `${SITES[host] || host}${kind}`;
+    return h('a', { href: url, target: '_blank', rel: 'noopener' }, name);
+  });
+  return [links.length > 1 ? 'Sources: ' : 'Source: ', ...links.flatMap((a, i) => (i ? [i === links.length - 1 ? ' and ' : ', ', a] : [a]))];
+}
+
+// One bonus rule's box: its category, rate, cap and any minimum, condition or note.
+function ruleBox(card, r) {
+  const others = card.bonus_rules.filter((o) => o !== r);
+  const sharing = r.cap_bucket ? others.filter((o) => o.cap_bucket === r.cap_bucket) : [];
+  const shared = !sharing.length ? ''
+    : sharing.length === others.length ? ', shared across all bonus categories'
+    : `, shared with ${sharing.map((o) => o.label || `${o.mpd} mpd`).join(' and ')}`;
+  const cap = r.cap_bucket ? card.caps[r.cap_bucket] : null;
+  return h('li', {},
+    h('p', { class: 'rule-head' }, r.label || `${r.mpd} mpd`, r.needs_verification ? unconfirmedTag() : null),
+    h('p', {}, `${r.mpd} mpd, ${methodList(r.methods)}`),
+    h('p', { class: 'muted' }, cap ? `Cap: ${sgd(cap.sgd)} ${period(card)}${shared}` : 'Cap: none'),
+    cap?.min_spend_sgd ? h('p', { class: 'muted' }, `Needs ${sgd(cap.min_spend_sgd)} ${period(card)} in this category, or the category earns ${card.base_mpd.local} mpd.`) : null,
+    r.valid_until ? h('p', { class: 'muted' }, `Until ${formatDay(r.valid_until)}`) : null,
+    r.condition ? h('p', { class: 'muted' }, `${r.condition}.`) : null,
+    r.notes ? h('p', { class: 'muted' }, r.notes) : null);
+}
 
 function catalogueRow(card, render) {
   const top = Math.max(card.base_mpd.local, ...card.bonus_rules.map((r) => r.mpd));
   const owned = hasCard(card.id);
   return h('button', { type: 'button', class: 'list-row', onclick: () => cardDetails(card, render) },
     h('span', { class: 'list-main' },
-      h('span', { class: 'list-title' }, shortName(card), owned ? h('span', { class: 'tag' }, 'yours') : null),
+      h('span', { class: 'list-title' }, shortName(card), owned ? h('span', { class: 'tag' }, 'Yours') : null),
       h('span', { class: 'list-sub' }, `${card.bank}, up to ${top} mpd, base ${card.base_mpd.local} mpd`)));
 }
 
 // Everything the app knows about a card, with unconfirmed parts labelled.
 function cardDetails(card, render) {
   const owned = hasCard(card.id);
+  const hasCycle = Object.keys(card.caps || {}).length > 0 || !!card.min_spend;
+  const bonusBlock = card.bonus_earn_block && card.bonus_earn_block.type !== card.earn_block?.type ? card.bonus_earn_block : null;
   let s;
   const content = h('div', { class: 'sheet-form' },
     h('dl', { class: 'facts' },
-      h('dt', {}, 'Base rate'), h('dd', {}, `${card.base_mpd.local} mpd local, ${card.base_mpd.fcy} mpd foreign currency`),
+      h('dt', {}, 'Base rate'), h('dd', {}, baseRate(card.base_mpd)),
       h('dt', {}, 'Annual fee'), h('dd', {}, card.annual_fee_sgd ? money(card.annual_fee_sgd) : 'None', card.fee_notes ? h('span', { class: 'muted block' }, card.fee_notes) : null),
-      h('dt', {}, 'Rounding'), h('dd', {}, card.earn_block ? `${card.earn_block.type === 'per_txn_floor' ? 'Rounded down to' : card.earn_block.type === 'per_txn_nearest' ? 'Rounded to the nearest' : 'Month total rounded down to'} S$${card.earn_block.size_sgd}` : 'Not known', card.earn_block?.needs_verification ? unconfirmedTag() : null),
-      h('dt', {}, 'Caps reset'), h('dd', {}, card.cap_period === 'statement_month' ? 'On the statement date' : 'On the 1st of each month')),
+      h('dt', {}, 'Rounding'), h('dd', {}, card.earn_block ? rounding(card.earn_block, card) : 'Not known', card.earn_block?.needs_verification ? unconfirmedTag() : null,
+        bonusBlock ? h('span', { class: 'muted block' }, `Bonus miles: ${lowerFirst(rounding(bonusBlock, card))}`) : null),
+      card.min_spend ? [h('dt', {}, 'Minimum spend'), h('dd', {}, minSpend(card), card.min_spend.needs_verification ? unconfirmedTag() : null)] : null,
+      hasCycle ? [h('dt', {}, 'Caps reset'), h('dd', {}, card.cap_period === 'statement_month' ? 'Statement date' : '1st of each month')] : null),
     card.bonus_rules.length ? h('h3', {}, 'Bonus rates') : null,
-    h('ul', { class: 'rules' }, card.bonus_rules.map((r) => h('li', {},
-      h('p', { class: 'rule-head' }, ruleSummary(r), r.needs_verification ? unconfirmedTag() : null),
-      r.cap_bucket ? h('p', { class: 'muted' }, `Cap S$${card.caps[r.cap_bucket].sgd} a ${card.cap_period === 'statement_month' ? 'statement month' : 'month'}${Object.values(card.bonus_rules).filter((o) => o.cap_bucket === r.cap_bucket).length > 1 ? ', shared' : ''}`) : null,
-      r.valid_until ? h('p', { class: 'muted' }, `Until ${formatDay(r.valid_until)}`) : null,
-      r.notes ? h('p', { class: 'muted' }, r.notes) : null))),
+    h('ul', { class: 'rules' }, card.bonus_rules.map((r) => ruleBox(card, r))),
     card.gotchas?.length ? h('h3', {}, 'Watch out for') : null,
     card.gotchas?.length ? h('ul', { class: 'bullets' }, card.gotchas.map((g) => h('li', {}, g))) : null,
-    h('p', { class: 'muted small' }, `Checked ${formatDay(card.last_verified)}. Source: ${card.source}`),
+    h('p', { class: 'muted small' }, `Checked ${formatDay(card.last_verified)}. `, sources(card.source), '.'),
     h('div', { class: 'sheet-actions' },
       owned
         ? h('button', { type: 'button', class: 'button secondary', onclick: () => { s.close(); cardForm(card, state.myCards.find((c) => c.cardId === card.id), render); } }, 'Edit your details')
@@ -92,7 +138,7 @@ function cardForm(card, mine, render) {
   const choiceRules = card.bonus_rules.filter((r) => r.match?.mode === 'user_category');
   const choiceInputs = choiceRules.map((r) => ({
     key: r.match.user_setting,
-    input: h('select', {}, h('option', { value: '' }, 'Not chosen yet'), r.match.options.map((o) => h('option', { value: o, selected: mine?.choices?.[r.match.user_setting] === o }, o))),
+    input: h('select', {}, h('option', { value: '' }, 'Not chosen yet'), r.match.options.map((o) => h('option', { value: o, selected: mine?.choices?.[r.match.user_setting] === o }, r.match.option_labels?.[o] ?? o))),
   }));
   const conditionRules = card.bonus_rules.filter((r) => r.condition);
   const conditionInputs = conditionRules.map((r) => ({ id: r.id, input: h('input', { type: 'checkbox', checked: !!mine?.conditionsMet?.[r.id] }), rule: r }));
@@ -124,11 +170,13 @@ function cardForm(card, mine, render) {
   field('Card opened', opened, 'Sign-up bonus spend counts from this date.'),
   h('details', { class: 'signup', open: !!mine?.signup },
     h('summary', {}, 'Sign-up bonus'),
-    field('Minimum spend (S$)', signupMin),
+    field('Minimum spend in S$', signupMin),
     field('Spend by', signupDeadline),
     field('Bonus miles', signupMiles)),
   choiceInputs.map((c, i) => field('Bonus category', c.input, choiceRules[i].notes)),
-  conditionInputs.map((c) => h('label', { class: 'toggle' }, c.input, h('span', {}, `I meet this: ${c.rule.condition} (${c.rule.mpd} mpd)`))),
+  conditionInputs.map((c) => h('div', { class: 'field' },
+    h('label', { class: 'toggle' }, c.input, h('span', {}, `I meet this, so count the ${c.rule.mpd} mpd bonus`)),
+    h('span', { class: 'field-hint' }, `${c.rule.condition}.`))),
   h('div', { class: 'sheet-actions' },
     h('button', { type: 'submit', class: 'button primary' }, mine ? 'Save changes' : 'Add card'),
     mine ? h('button', {
@@ -157,7 +205,7 @@ function settingsSection(rerender) {
   const last = state.settings.lastExportAt;
   return h('section', {},
     h('h2', { class: 'subhead' }, 'Settings'),
-    field('Posting delay (days)', delay, 'How long purchases take to post. Near a cap reset, purchases within this many days are marked "may count next month".'),
+    field('Posting delay in days', delay, 'How long purchases take to post. Near a cap reset, purchases within this many days are marked "may count next month".'),
     h('h2', { class: 'subhead' }, 'Backup'),
     h('p', { class: 'muted small' }, last ? `Last backup ${formatDay(today(new Date(last)))}.` : 'Not backed up yet.', ' Everything is stored only on this phone.'),
     h('div', { class: 'sheet-actions' },

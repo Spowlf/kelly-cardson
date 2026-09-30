@@ -16,7 +16,7 @@ import { formatSgd } from './earn.js';
 export function statementCheck({ card, userCard, txns, statementDate, statementTotalSgd }) {
   const statementDay = userCard?.statementDay;
   if (!statementDay) {
-    return { cardId: card.id, cycle: null, loggedSgd: null, gapSgd: null, offerCatchUp: false, message: 'Add the statement day for this card first' };
+    return { cardId: card.id, cycle: null, loggedSgd: null, gapSgd: null, offerCatchUp: false, message: 'Add the statement day for this card first.' };
   }
   // Statements always follow the statement cycle, whatever the card's cap period.
   const cycle = cycleFor(statementDate, 'statement_month', statementDay);
@@ -28,7 +28,7 @@ export function statementCheck({ card, userCard, txns, statementDate, statementT
   let message;
   if (gap > 0) message = `Statement is ${formatSgd(gap)} more than you logged. Add a catch-up entry for the difference?`;
   else if (gap < 0) message = `You logged ${formatSgd(-gap)} more than the statement. Probably a purchase that posts on the next statement.`;
-  else message = 'Matches what you logged';
+  else message = 'Matches what you logged.';
 
   return { cardId: card.id, cycle, loggedSgd: toSgd(logged), gapSgd: toSgd(gap), offerCatchUp: gap > 0, message };
 }

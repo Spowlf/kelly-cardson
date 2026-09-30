@@ -35,3 +35,14 @@
 - When the service worker fetches a changed file (e.g. `data/cards.json`), or a new worker takes over, the page shows "Updated, tap to reload".
 - Offline: `sw.js` precaches every app file (stale-while-revalidate). When adding a file under `src/`, add it to `FILES` in `sw.js`; `tests/sw.test.js` fails otherwise. Bump `CACHE` only to force-drop old caches.
 - Hosting: GitHub Pages serves the repo root; all paths are relative so it works under `/<repo>/`.
+
+## Writing style
+
+Applies to every string she sees: screens, sheets, toasts, reminders, engine reasons and warnings, and the text fields in `data/cards.json` and `data/categories.json` that the app shows (`label`, `notes`, `fee_notes`, `fee_reminder`, `gotchas`, `points_expiry`, `condition`, `disputed[].note`/`question`, cap `label`s). Developer-only detail in cards.json goes in `dev_notes`, which the app never shows.
+
+- Sentence case everywhere: capitalise only the first word and proper nouns (bank, card and merchant names, MRT, SimplyGo). No ALL CAPS for emphasis.
+- Full sentences end with a period: hints, notes, warnings, reason lines and sentence bullets. Labels, buttons, chips, category names, titles and single values don't.
+- Use " / " for alternatives. No "&" and no parentheses in names (e.g. "Pharmacy / health and beauty", "Online marketplaces").
+- Money always has thousands separators: S$1,000.
+- User-facing text says "category code", never "MCC". Don't show code numbers or ranges except in the category code field.
+- Dates as "30 Sep 2026". Sources as linked text ("Mainly Miles review"), never a raw URL.

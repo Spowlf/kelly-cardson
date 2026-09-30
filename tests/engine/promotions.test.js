@@ -24,7 +24,7 @@ test('promotion applies inside its dates and says when it ends', () => {
   assert.equal(r.miles, 300);
   assert.equal(r.ruleId, 'promo');
   assert.equal(r.unconfirmed, true);
-  assert.ok(r.warnings.some((w) => w === 'Promotion ends 31 Mar 2027'));
+  assert.ok(r.warnings.some((w) => w === 'Promotion ends 31 Mar 2027.'));
 });
 
 test('promotion stops after its end date and before its start date', () => {

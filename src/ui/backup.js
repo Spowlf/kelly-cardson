@@ -2,7 +2,7 @@
 
 import { h, toast } from './dom.js';
 import { exportData, importData, setSetting } from '../db/repo.js';
-import { today } from '../engine/index.js';
+import { today, formatDay } from '../engine/index.js';
 
 export async function exportBackup() {
   const data = await exportData();
@@ -41,7 +41,8 @@ export function importBackup(onDone) {
         return;
       }
       const count = backup?.stores?.txns?.length ?? 0;
-      if (!confirm(`Replace everything on this phone with the backup from ${backup?.exportedAt?.slice(0, 10) || 'unknown date'} (${count} purchases)?`)) return;
+      const from = backup?.exportedAt ? formatDay(backup.exportedAt.slice(0, 10)) : 'an unknown date';
+      if (!confirm(`Replace everything on this phone with the backup from ${from}? It has ${count} purchase${count === 1 ? '' : 's'}.`)) return;
       try {
         await importData(backup);
         toast('Backup imported');

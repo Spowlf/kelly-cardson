@@ -46,13 +46,29 @@ export const CHANNELS = {
   transit: { label: 'MRT / bus', methods: ['simplygo'] },
 };
 
+// Where she can pay for a category: MRT / bus only for transit, never for anything else, all when unsure.
+export function channelsFor(category) {
+  if (!category) return Object.keys(CHANNELS);
+  return category.channel === 'transit' ? ['transit'] : Object.keys(CHANNELS).filter((c) => c !== 'transit');
+}
+
+// A method name inside a sentence: "phone tap", but "Apple Pay in app" and "SimplyGo" keep their capitals.
+export const methodPhrase = (m) => {
+  const name = METHOD_NAMES[m];
+  return /^(Apple|SimplyGo)/.test(name) ? name : name[0].toLowerCase() + name.slice(1);
+};
+
+export const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
 export const money = (n) => `S$${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const miles = (n) => Math.floor(n).toLocaleString('en-SG');
+// Whole dollars without cents: S$1,000, but S$87.20.
+export const sgd = (n) => (Number.isInteger(Number(n)) ? `S$${Number(n).toLocaleString('en-SG')}` : money(n));
 
 // "UOB Preferred Visa (formerly UOB PPV)" -> "UOB Preferred Visa"
 export const shortName = (card) => card.name.replace(/\s*\(.*\)\s*$/, '');
 
-export const unconfirmedTag = () => h('span', { class: 'tag tag-unconfirmed' }, 'unconfirmed');
+export const unconfirmedTag = () => h('span', { class: 'tag tag-unconfirmed' }, 'Unconfirmed');
 
 // A chip row where one value is selected. options: [{ value, label }]
 export function chips({ name, options, value, onChange, label }) {

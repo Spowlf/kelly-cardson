@@ -27,7 +27,7 @@ test('a full cap earns the base rate and says so', () => {
   const r = ppv(txn('uob_ppv', 50), [txn('uob_ppv', 600)]);
   assert.equal(r.miles, 20);
   assert.equal(r.bonusSgd, 0);
-  assert.match(r.reason, /tap cap full/i);
+  assert.match(r.reason, /tap cap of S\$600 is full/i);
 });
 
 test('separate caps within one card: full tap cap does not touch online cap', () => {

@@ -1,6 +1,6 @@
 // "Which card?": merchant, amount, how she's paying -> her cards ranked, with "Paid with this".
 
-import { h, chips, categorySelect, field, sheet, toast, money, miles, shortName, unconfirmedTag, METHOD_NAMES, METHOD_VERBS, CHANNELS, fill } from './dom.js';
+import { h, chips, categorySelect, field, sheet, toast, money, miles, shortName, unconfirmedTag, METHOD_NAMES, METHOD_VERBS, CHANNELS, channelsFor, fill } from './dom.js';
 import { state, saveTxn, deleteTxn, findMerchant, merchantSuggestions } from '../db/repo.js';
 import { recommend, kiasumilesPrompt, today } from '../engine/index.js';
 
@@ -33,28 +33,39 @@ export function renderWhich(root, { go }) {
       form.category = categoryInput.value;
       const channel = state.categoriesById[form.category]?.channel;
       if (channel) setChannel(channel);
+      else renderChannels();
       update();
     },
   });
   const methodChips = h('div');
-  const channelChips = chips({
-    name: 'channel', label: 'Where', value: form.channel,
-    options: Object.entries(CHANNELS).map(([value, c]) => ({ value, label: c.label })),
-    onChange: (v) => { form.channel = v; form.method = 'any'; renderMethods(); update(); },
-  });
+  const channelChips = h('div');
+  const howRow = h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How'), methodChips);
   const fcyInput = h('input', { type: 'checkbox', checked: form.fcy, onchange: () => { form.fcy = fcyInput.checked; update(); } });
 
+  // Where she can pay depends on the category; MRT / bus has only one way, so the How row goes.
+  function renderChannels() {
+    const allowed = channelsFor(state.categoriesById[form.category]);
+    if (!allowed.includes(form.channel)) { form.channel = allowed[0]; form.method = 'any'; }
+    fill(channelChips, chips({
+      name: 'channel', label: 'Where', value: form.channel,
+      options: allowed.map((value) => ({ value, label: CHANNELS[value].label })),
+      onChange: (v) => { form.channel = v; form.method = 'any'; renderMethods(); update(); },
+    }));
+    renderMethods();
+  }
+
   function renderMethods() {
+    howRow.hidden = form.channel === 'transit';
     const methods = CHANNELS[form.channel].methods;
     const options = methods.length > 1 ? [{ value: 'any', label: 'Best way' }, ...methods.map((m) => ({ value: m, label: METHOD_NAMES[m] }))] : [{ value: 'any', label: METHOD_NAMES[methods[0]] }];
     fill(methodChips, chips({ name: 'method', label: 'How', value: form.method, options, onChange: (v) => { form.method = v; update(); } }));
   }
   function setChannel(channel) {
-    if (form.channel === channel) return;
-    form.channel = channel;
-    form.method = 'any';
-    channelChips.set(channel);
-    renderMethods();
+    if (form.channel !== channel && channelsFor(state.categoriesById[form.category]).includes(channel)) {
+      form.channel = channel;
+      form.method = 'any';
+    }
+    renderChannels();
   }
 
   // Merchant memory fills category and where she pays.
@@ -63,6 +74,7 @@ export function renderWhich(root, { go }) {
     if (!m) return;
     if (m.category) { form.category = m.category; categoryInput.value = m.category; }
     if (m.channel) setChannel(m.channel);
+    else renderChannels();
   }
 
   function showSuggestions() {
@@ -108,7 +120,7 @@ export function renderWhich(root, { go }) {
     } catch {
       // Clipboard blocked: show the text so she can copy it by hand.
       const area = h('textarea', { class: 'prompt-text', readonly: true, rows: 6 }, text);
-      sheet('KiasuMiles prompt', h('div', { class: 'sheet-form' }, h('p', { class: 'muted' }, 'Select all and copy:'), area));
+      sheet('KiasuMiles prompt', h('div', { class: 'sheet-form' }, h('p', { class: 'muted' }, 'Select all and copy it.'), area));
       area.select();
     }
   }
@@ -140,7 +152,7 @@ export function renderWhich(root, { go }) {
       hint && h('p', { class: 'hint' }, hint),
       capAfter > 0 && capAfter >= b.capSgd * 0.85 ? h('p', { class: 'warning' }, `After this, at least ${money(Math.min(capAfter, b.capSgd))} of the ${money(b.capSgd)} ${b.capName} cap will be used.`) : null,
       ...b.warnings.map((w) => h('p', { class: 'warning' }, w)),
-      b.fcyFeeSgd ? h('p', { class: 'fee' }, `Foreign-currency fee ${money(b.fcyFeeSgd)}${b.costPerMileSgd ? `, S$${b.costPerMileSgd.toFixed(4)} a mile` : ''}`) : null,
+      b.fcyFeeSgd ? h('p', { class: 'fee' }, `Foreign currency fee: ${money(b.fcyFeeSgd)}${b.costPerMileSgd ? `, or S$${b.costPerMileSgd.toFixed(4)} a mile` : ''}.`) : null,
     ];
     return h('article', { class: `answer ${isTop ? 'answer-top' : 'answer-row'} tone-${tone}` },
       h('div', { class: 'answer-main' },
@@ -154,16 +166,16 @@ export function renderWhich(root, { go }) {
       h('button', { type: 'button', class: `button ${isTop ? 'primary' : 'secondary'}`, onclick: (e) => { e.currentTarget.disabled = true; paid(r, purchase); } }, 'Paid with this'));
   }
 
-  renderMethods();
+  renderChannels();
   fill(root, 
     h('form', { class: 'which-form', onsubmit: (e) => e.preventDefault() },
       field('Merchant', merchantInput),
       suggestions,
       h('div', { class: 'row-2' },
-        field('Amount (S$)', amountInput),
+        field('Amount in S$', amountInput),
         field('Category', categoryInput)),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Where'), channelChips),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How'), methodChips),
+      howRow,
       h('label', { class: 'toggle' }, fcyInput, h('span', {}, 'Charged in foreign currency'))),
     results);
   update();

@@ -1,6 +1,6 @@
 // History: logged purchases (edit or delete) and merchant memory (edit or delete).
 
-import { h, chips, categorySelect, field, sheet, toast, money, shortName, METHOD_NAMES, CHANNELS, fill } from './dom.js';
+import { h, chips, categorySelect, field, sheet, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, channelsFor, fill } from './dom.js';
 import { state, saveTxn, deleteTxn, saveMerchant, deleteMerchant } from '../db/repo.js';
 import { formatDay, today, resultsByTxn } from '../engine/index.js';
 
@@ -24,7 +24,7 @@ const methodOptions = (value) => Object.entries(METHOD_NAMES).map(([v, label]) =
 const cardOptions = (value, allowNone) => {
   const ids = state.myCards.map((c) => c.cardId);
   if (value && !ids.includes(value)) ids.push(value);
-  const label = (id) => (state.cardsById[id] ? shortName(state.cardsById[id]) : id) + (state.myCards.some((c) => c.cardId === id) ? '' : ' (removed)');
+  const label = (id) => (state.cardsById[id] ? shortName(state.cardsById[id]) : id) + (state.myCards.some((c) => c.cardId === id) ? '' : ', removed');
   return [
     allowNone ? h('option', { value: '', selected: !value }, 'None') : null,
     ...ids.map((id) => h('option', { value: id, selected: id === value }, label(id))),
@@ -44,8 +44,8 @@ function purchases(render) {
     h('h2', { class: 'subhead' }, g.date === today() ? 'Today' : formatDay(g.date)),
     h('ul', { class: 'list' }, g.items.map((t) => h('li', {}, h('button', { type: 'button', class: 'list-row', onclick: () => editTxn(t, render) },
       h('span', { class: 'list-main' },
-        h('span', { class: 'list-title' }, t.isCatchUp ? 'Statement catch-up' : t.merchant || 'No merchant', results.get(t.id)?.disputes?.length ? h('span', { class: 'tag tag-unconfirmed' }, 'check on statement') : null),
-        h('span', { class: 'list-sub' }, `${state.cardsById[t.cardId] ? shortName(state.cardsById[t.cardId]) : t.cardId}${t.method ? `, ${METHOD_NAMES[t.method]}` : ''}${t.fcy ? ', foreign currency' : ''}`)),
+        h('span', { class: 'list-title' }, t.isCatchUp ? 'Statement catch-up' : t.merchant || 'No merchant', results.get(t.id)?.disputes?.length ? h('span', { class: 'tag tag-unconfirmed' }, 'Check on statement') : null),
+        h('span', { class: 'list-sub' }, `${state.cardsById[t.cardId] ? shortName(state.cardsById[t.cardId]) : t.cardId}${t.method ? `, ${methodPhrase(t.method)}` : ''}${t.fcy ? ', foreign currency' : ''}`)),
       h('span', { class: 'list-amount' }, money(t.amount)))))))));
 }
 
@@ -63,7 +63,7 @@ function editTxn(t, render) {
     onsubmit: async (e) => {
       e.preventDefault();
       const value = Number(amount.value.replace(/[^\d.]/g, ''));
-      if (!(value > 0)) { amount.setCustomValidity('Enter an amount above zero'); amount.reportValidity(); return; }
+      if (!(value > 0)) { amount.setCustomValidity('Enter an amount above zero.'); amount.reportValidity(); return; }
       // A catch-up has no method or category; its hidden fields must not give it one.
       const details = t.isCatchUp ? { method: t.method, category: t.category } : { method: method.value, category: category.value };
       await saveTxn({ ...t, ...details, amount: value, merchant: merchant.value, date: date.value || t.date, cardId: card.value, fcy: fcy.checked });
@@ -72,7 +72,7 @@ function editTxn(t, render) {
       render();
     },
   },
-  field('Amount (S$)', amount),
+  field('Amount in S$', amount),
   field('Merchant', merchant),
   field('Date', date),
   field('Card', card),
@@ -102,16 +102,23 @@ function merchants(render) {
       h('span', { class: 'list-title' }, m.name),
       h('span', { class: 'list-sub' }, [
         state.categoriesById[m.category]?.label || 'No category',
-        m.usualMethod && METHOD_NAMES[m.usualMethod],
+        m.usualMethod && methodPhrase(m.usualMethod),
         m.usualCardId && state.cardsById[m.usualCardId] && shortName(state.cardsById[m.usualCardId]),
       ].filter(Boolean).join(', ')))))));
 }
 
 function editMerchant(m, render) {
   const name = h('input', { type: 'text', value: m.name, required: true, autocapitalize: 'words' });
-  const category = categorySelect(state.categories, m.category);
+  // MRT / bus only for the MRT / bus category, and not for any other.
+  const channelOptions = () => {
+    const current = channel.options.length ? channel.value : m.channel;
+    fill(channel, h('option', { value: '' }, 'Not set'),
+      channelsFor(state.categoriesById[category.value]).map((v) => h('option', { value: v, selected: v === current }, CHANNELS[v].label)));
+  };
+  const category = categorySelect(state.categories, m.category, { onchange: () => channelOptions() });
   const mcc = h('input', { type: 'text', inputmode: 'numeric', pattern: '\\d{4}', maxlength: 4, value: m.mcc || '', placeholder: 'e.g. 5812' });
-  const channel = h('select', {}, h('option', { value: '' }, 'Not set'), Object.entries(CHANNELS).map(([v, c]) => h('option', { value: v, selected: v === m.channel }, c.label)));
+  const channel = h('select');
+  channelOptions();
   const method = h('select', {}, h('option', { value: '' }, 'Not set'), methodOptions(m.usualMethod));
   const card = h('select', {}, cardOptions(m.usualCardId, true));
   let s;
@@ -127,7 +134,7 @@ function editMerchant(m, render) {
   },
   field('Name', name),
   field('Category', category),
-  field('Category code', mcc, 'Look it up with HeyMax\'s MCC lookup (search the merchant name), or check the category shown next to the purchase on your statement or bank app. With the real code, recommendations are exact.'),
+  field('Category code', mcc, 'Look it up with HeyMax\'s category code lookup: search the merchant name. Or check the category shown next to the purchase on your statement or bank app. With the real code, recommendations are exact.'),
   field('Where you pay', channel),
   field('Usual way to pay', method),
   field('Usual card', card),

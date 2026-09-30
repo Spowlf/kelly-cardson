@@ -38,7 +38,7 @@ test('UOB Visa Signature: ranked at base until S$1,000 in the category, unconfir
   const r = vs(fcy(200));
   assert.equal(r.miles, 80);
   assert.equal(r.bonusSgd, 0);
-  assert.equal(r.reason, '4 mpd once S$800 more is spent in this category');
+  assert.equal(r.reason, '4 mpd once S$800 more is spent in this category.');
   assert.equal(r.unconfirmed, true);
 });
 

@@ -1,6 +1,6 @@
 // Monthly statement check: enter the statement total, see the gap from what's logged, add a catch-up.
 
-import { h, field, sheet, toast, money, shortName, fill } from './dom.js';
+import { h, field, sheet, toast, money, shortName, capitalize, fill } from './dom.js';
 import { state, saveStatement, saveTxn, answerDispute } from '../db/repo.js';
 import { statementCheck, catchUpTxn, disputedInStatement, capName, cycleFor, addDays, formatDay, today } from '../engine/index.js';
 
@@ -8,7 +8,7 @@ export function openStatementCheck(cardId, onDone) {
   const card = state.cardsById[cardId];
   const mine = state.myCards.find((c) => c.cardId === cardId);
   if (!mine?.statementDay) {
-    toast('Set this card\'s statement day in My cards first');
+    toast('Set this card\'s statement day in My cards first.');
     return;
   }
 
@@ -51,7 +51,7 @@ export function openStatementCheck(cardId, onDone) {
   const totalInput = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00', class: 'amount-input', oninput: () => update() });
   const bucketInput = h('select', {},
     h('option', { value: '' }, 'All of this card\'s caps'),
-    Object.keys(card.caps || {}).map((b) => h('option', { value: b }, `${capName(card, b)} cap only`)));
+    Object.keys(card.caps || {}).map((b) => h('option', { value: b }, `${capitalize(capName(card, b))} cap only`)));
   const outcome = h('div', { class: 'statement-outcome', 'aria-live': 'polite' });
   let s;
   let check = null;
@@ -84,7 +84,7 @@ export function openStatementCheck(cardId, onDone) {
 
   s = sheet(`${shortName(card)} statement`, h('div', { class: 'sheet-form' },
     field('Statement date', dateInput),
-    field('New spend on the statement (S$)', totalInput, 'The total of this card\'s purchases on the statement, not the amount due.'),
+    field('New spend on the statement in S$', totalInput, 'The total of this card\'s purchases on the statement, not the amount due.'),
     outcome,
     disputes));
   renderDisputes();
