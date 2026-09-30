@@ -1,5 +1,6 @@
 node_modules/
 .DS_Store
 *.log
+.claude/settings.local.json
 # Her backups never go in the repo: they hold her purchases.
 miles-backup-*.json

@@ -33,7 +33,7 @@
       "earn_block": "How spend is rounded for base miles. bonus_earn_block (optional) overrides it for bonus miles. earn_block_overrides apply to listed methods.",
       "cap_period": "calendar_month | statement_month | null (null = calendar_month). Applies to every cap, pool and minimum spend on the card.",
       "cap_basis": "posting_date | transaction_date | null (null = unknown; the app treats it as posting_date to be safe).",
-      "caps": "Named cap buckets { bucket_id: { sgd, min_spend_sgd?, rank_until_min_met?, hard_limit?, needs_verification? } }. Rules that share a bucket share its cap.",
+      "caps": "Named cap buckets { bucket_id: { sgd, label?, min_spend_sgd?, rank_until_min_met?, hard_limit?, needs_verification? } }. Rules that share a bucket share its cap. label is the name she sees (default: the id with spaces).",
       "min_spend": "Card-level minimum: { sgd, failure }. failure 'all_base' = every purchase that cycle earns base_mpd.",
       "caps.*.min_spend_sgd": "Bucket-level minimum: spend in the bucket must reach this or the bucket earns base_mpd.",
       "caps.*.rank_until_min_met": "bonus (default: rank at the bonus rate with a 'needs S$X more' warning) | base (rank at base_mpd until the minimum is met).",
@@ -44,10 +44,13 @@
       "bonus_rules[].cap_bucket": "Key into caps, or null for uncapped.",
       "bonus_rules[].valid_from / valid_until": "Optional 'YYYY-MM-DD' dates; the rule only applies to purchases in that window.",
       "bonus_rules[].promotion": "true = time-limited promotion; the app shows when it ends.",
-      "bonus_rules[].disputed": "[{ id, merchants, note, question, resolved? }]: sources disagree for these merchants. The rate still applies, marked unconfirmed, with the note shown, until her statement answers `question` (stored on her phone) or `resolved: \"confirmed\"` is set here.",
+      "bonus_rules[].disputed": "[{ id, merchants | recurring: true, note, question, resolved? }]: sources disagree for these merchants (or for all recurring payments). The rate still applies, marked unconfirmed, with the note shown, until her statement answers `question` (stored on her phone) or `resolved: \"confirmed\"` is set here.",
       "bonus_rules[].match.exclude_merchants": "Merchant names this rule never applies to (base rate instead), e.g. after a statement showed no bonus.",
+      "bonus_rules[].match.exclude_mccs": "Category codes this rule never applies to, whatever the mode (e.g. supermarket-coded purchases at a named platform).",
+      "bonus_rules[].match.option_mccs": "user_category only: { option: [codes] }. When her chosen option has codes, they decide the match (confirmed); otherwise option_categories is used (unconfirmed).",
       "bonus_rules[].condition": "A condition the app cannot check. The rule is shown as conditional and not counted unless she marks it met.",
       "no_points": "Purchases that earn nothing on this card: { mccs, merchants, notes, needs_verification }.",
+      "bonus_rules[].match.exclude_recurring": "true = recurring payments (categories.json recurring: true, e.g. subscriptions) earn base on this rule.",
       "miles_per_point": "KrisFlyer miles per bank point, for showing points balances.",
       "fee_reminder": "Text shown on the annual fee reminder."
     }
@@ -77,7 +80,7 @@
       "cap_period": "calendar_month",
       "cap_basis": "posting_date",
       "caps": {
-        "tap": { "sgd": 600 },
+        "tap": { "sgd": 600, "label": "phone tap" },
         "online": { "sgd": 600 }
       },
       "min_spend": null,
@@ -96,9 +99,9 @@
           "mpd": 4.0,
           "methods": ["online_card_entry", "in_app_wallet"],
           "currencies": ["SGD", "FCY"],
-          "match": { "mode": "whitelist", "mccs": ["5311", "4816", "5262", "5306", "5309", "5310", "5331", "5399", "5611", "5621", "5631", "5641", "5651", "5661", "5691", "5699", "5732", "5733", "5734", "5735", "5912", "5942", "5944", "5945", "5946", "5947", "5948", "5949", "5964", "5966", "5967", "5968", "5969", "5970", "5992", "5999", "5333", "5411", "9751", "5441", "5462", "5499", "5811", "5812", "5814", "7278", "7832", "7841", "7922", "7991", "7996", "7998", "7999"] },
+          "match": { "mode": "whitelist", "exclude_recurring": true, "mccs": ["5311", "4816", "5262", "5306", "5309", "5310", "5331", "5399", "5611", "5621", "5631", "5641", "5651", "5661", "5691", "5699", "5732", "5733", "5734", "5735", "5912", "5942", "5944", "5945", "5946", "5947", "5948", "5949", "5964", "5966", "5967", "5968", "5969", "5970", "5992", "5999", "5333", "5411", "9751", "5441", "5462", "5499", "5811", "5812", "5814", "7278", "7832", "7841", "7922", "7991", "7996", "7998", "7999"] },
           "cap_bucket": "online",
-          "notes": "Recurring/subscription charges excluded even in eligible MCCs. In-app Apple/Google Pay counts as ONLINE (this bucket), not contactless. Source table also lists 8012; verify before adding."
+          "notes": "Recurring/subscription charges earn 0.4 mpd even in eligible MCCs. In-app Apple/Google Pay counts as ONLINE (this bucket), not contactless. Source table also lists 8012; verify before adding."
         }
       ],
       "no_points": {
@@ -145,11 +148,12 @@
           "mpd": 4.0,
           "methods": ["online_card_entry"],
           "currencies": ["SGD", "FCY"],
-          "match": { "mode": "blacklist", "mccs": ["3000-3350", "3351-3500", "3501-3999", "4111", "4112", "4411", "4511", "4722", "4789", "5962", "7011", "7512"] },
+          "match": { "mode": "blacklist", "mccs": ["3000-3350", "3351-3500", "3501-3999", "4111", "4112", "4411", "4511", "4722", "4723", "4789", "5962", "7011", "7012", "7512"] },
           "cap_bucket": "shared",
           "disputed": [
             { "id": "citi_rewards_online_grab", "merchants": ["Grab"], "note": "Sources disagree on Grab rides: SingSaver (Feb 2026) and Mainly Miles (Aug 2026) say 4 mpd, KiasuMiles doesn't. Confirm on your first statement.", "question": "Did this earn 10X points?", "added": "2026-09-30" },
             { "id": "citi_rewards_online_foodpanda", "merchants": ["foodpanda"], "note": "Sources disagree on foodpanda: KiasuMiles says 0.4 mpd (it seems to treat Citi's online bonus as a category list). Confirm on your first statement.", "question": "Did this earn 10X points?", "added": "2026-09-30" },
+            { "id": "citi_rewards_online_recurring", "recurring": true, "note": "Sources don't say whether recurring payments (subscriptions) earn Citi's online 10X. Confirm on your first statement.", "question": "Did this subscription earn 10X points?", "added": "2026-09-30" },
             { "id": "citi_rewards_online_golden_village", "merchants": ["Golden Village"], "note": "Sources disagree on Golden Village online: KiasuMiles says 0.4 mpd (it seems to treat Citi's online bonus as a category list). Confirm on your first statement.", "question": "Did this earn 10X points?", "added": "2026-09-30" }
           ],
           "notes": "Covers food delivery, Grab/Gojek rides, most online shopping when the card is entered directly. Apple/Google Pay used in-app earns 0.4 mpd. Kris+ earns 0.4 mpd."
@@ -174,7 +178,7 @@
       "points_expiry": "Fixed 60-month windows from card opening; all points expire 3 months after each window ends, regardless of when earned",
       "points_expiry_months": null,
       "gotchas": ["The Citi Rewards Visa is being retired on 15 Oct 2026; this entry is the Mastercard.", "Cap resets on statement date, not the 1st", "Points do not pool with other Citi cards (separate transfer fee per card)", "Dining in person is NOT a bonus category"],
-      "source": "https://mainlymiles.com/2025/04/25/citi-rewards-card-review-2025/ (review last updated Feb 2026; re-verify)",
+      "source": "https://mainlymiles.com/2025/04/25/citi-rewards-card-review-2025/ (updated 18 Aug 2026); travel exclusions incl. 4723/7012: https://milelion.com/2024/02/12/explained-citi-rewards-card-blacklist-for-travel-related-transactions/",
       "last_verified": "2026-09-30"
     },
     {
@@ -240,10 +244,11 @@
       "base_mpd": { "local": 0.4, "fcy": 0.4 },
       "fcy_fee_pct": 3.25,
       "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
+      "bonus_earn_block": { "type": "monthly_pooled_floor", "size_sgd": 5, "notes": "Bonus UNI$ are worked out on the month's eligible spend, then rounded down to S$5 (MileLion)." },
       "cap_period": "calendar_month",
       "cap_basis": "posting_date",
       "caps": {
-        "chosen": { "sgd": 1000 }
+        "chosen": { "sgd": 1000, "label": "chosen category" }
       },
       "min_spend": null,
       "bonus_rules": [
@@ -264,19 +269,32 @@
               "Family": ["groceries", "online_groceries", "department_store"],
               "Transport": ["rides", "public_transport", "petrol"],
               "Entertainment": ["cinema", "entertainment", "bars"]
+            },
+            "option_mccs": {
+              "Fashion": ["5311", "5611", "5621", "5631", "5651", "5655", "5661", "5691", "5699", "5948"],
+              "Dining": ["5811", "5812", "5814", "5499"],
+              "Travel": ["3000-3299", "3500-3999", "4411", "4511", "4582", "4722", "5309", "7011"],
+              "Beauty & Wellness": ["5912", "5977", "7230", "7231", "7297", "7298"],
+              "Family": ["5411", "5641"],
+              "Transport": ["4111", "4121", "4789", "5541", "5542"],
+              "Entertainment": ["5813", "7832", "7922"]
             }
           },
           "cap_bucket": "chosen",
-          "needs_verification": true,
-          "notes": "Pick ONE category (changeable each quarter per UOB; verify). Extra 2-6 mpd possible with a UOB Lady's Savings Account balance. option_categories is a guess until UOB's category codes are confirmed."
+          "notes": "Pick ONE category; you can change it each calendar quarter (up to the day before the quarter starts). Extra 2-6 mpd possible with a UOB Lady's Savings Account balance (not modelled). Codes per MileLion (Aug 2026); UOB says not every code in the Travel ranges 3000-3299 and 3500-3999 counts."
         }
       ],
-      "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
+      "no_points": {
+        "mccs": ["4900", "6300", "6513", "6540", "8211-8299", "8398", "9000-9999"],
+        "merchants": ["Amaze"],
+        "notes": ["Amaze", "charities", "education", "government", "insurance", "prepaid top-ups", "real estate agents", "utilities"],
+        "needs_verification": true
+      },
       "transfer": { "partners": ["KrisFlyer", "Asia Miles"], "fee_sgd": 27, "block_miles": 10000 },
       "points_expiry": "2 years, to end of the quarter earned",
       "points_expiry_months": 24,
       "gotchas": ["Pools with UOB Preferred Visa UNI$ (one transfer fee for both)"],
-      "source": "https://www.you.co/sg/blog/uob-lady-card/ (secondary source; confirm category MCCs on UOB T&Cs)",
+      "source": "https://milelion.com/2026/08/18/review-uob-ladys-card-ladys-solitaire/ (category codes, caps, rounding)",
       "last_verified": "2026-09-30"
     },
     {
@@ -297,20 +315,20 @@
       "miles_per_point_needs_verification": true,
       "base_mpd": { "local": 0.4, "fcy": 0.4 },
       "fcy_fee_pct": 3.25,
-      "earn_block": { "type": "per_txn_floor", "size_sgd": 5, "needs_verification": true },
+      "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
       "cap_period": "calendar_month",
       "cap_basis": null,
       "caps": {
-        "shared": { "sgd": 1110 }
+        "shared": { "sgd": 1110, "notes": "10,000 bonus OCBC$ a calendar month." }
       },
       "min_spend": null,
       "bonus_rules": [
-        { "id": "named_platforms_promo", "mpd": 6.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "merchants", "merchants": ["Watsons", "Lazada", "Shopee", "Taobao", "TikTok Shop"] }, "cap_bucket": "shared", "promotion": true, "valid_from": "2026-07-01", "valid_until": "2027-03-31", "needs_verification": true, "notes": "4 mpd plus a 2 mpd promotion for postings 1 Jul 2026 to 31 Mar 2027 (per KiasuMiles, 2026-09-30). The extra 2 mpd has its own monthly cap (5,000 OCBC$ = 2,000 miles); not modelled, so the app counts it against the shared cap. Shopee Pay and grocery-category Shopee/Lazada purchases are excluded. Replaces the original 6 mpd 'Watsons, selected online shopping platforms' rule." },
-        { "id": "named_platforms", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "merchants", "merchants": ["Watsons", "Lazada", "Shopee", "Taobao", "TikTok Shop"] }, "cap_bucket": "shared", "needs_verification": true, "notes": "Ordinary rate at named merchants once the promotion ends (per KiasuMiles: named merchants earn 4 mpd)." },
-        { "id": "selected_shopping", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "categories", "categories": ["fashion", "department_store", "online_shopping"] }, "cap_bucket": "shared", "needs_verification": true, "notes": "Original had no codes; categories are a guess." }
+        { "id": "named_platforms_promo", "mpd": 6.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "merchants", "merchants": ["Watsons", "Lazada", "Shopee", "Taobao", "TikTok Shop"], "exclude_mccs": ["5411"] }, "cap_bucket": "shared", "promotion": true, "valid_from": "2026-07-01", "valid_until": "2027-03-31", "needs_verification": true, "notes": "4 mpd plus a 2 mpd promotion for postings 1 Jul 2026 to 31 Mar 2027 (per KiasuMiles, 2026-09-30). The extra 2 mpd has its own monthly cap (5,000 OCBC$ = 2,000 miles); not modelled, so the app counts it against the shared cap. Shopee Pay and grocery-category Shopee/Lazada purchases are excluded. Replaces the original 6 mpd 'Watsons, selected online shopping platforms' rule." },
+        { "id": "named_platforms", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "merchants", "merchants": ["Watsons", "Lazada", "Shopee", "Taobao", "TikTok Shop"], "exclude_mccs": ["5411"] }, "cap_bucket": "shared", "needs_verification": true, "notes": "Ordinary rate at named merchants once the promotion ends (per KiasuMiles: named merchants earn 4 mpd)." },
+        { "id": "selected_shopping", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "whitelist", "mccs": ["5309", "5311", "5611-5691", "5941", "5948"] }, "cap_bucket": "shared", "notes": "Department stores, duty free, clothing, shoes, sporting goods, luggage (MileLion, May 2026). Supermarket-coded (5411) purchases at the named platforms don't earn the bonus." }
       ],
-      "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
-      "source": "https://mainlymiles.com/credit-cards/",
+      "no_points": { "mccs": [], "merchants": ["ShopeePay", "Shopee Pay"], "notes": ["ShopeePay (5262) earns no OCBC$"], "needs_verification": true },
+      "source": "https://milelion.com/2026/05/29/review-ocbc-titanium-rewards-card/",
       "last_verified": "2026-09-30"
     },
     {
@@ -331,22 +349,23 @@
       "base_mpd": { "local": 0.4, "fcy": 0.4 },
       "fcy_fee_pct": 3.25,
       "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
+      "bonus_earn_block": { "type": "monthly_pooled_floor", "size_sgd": 5, "notes": "Bonus UNI$ are worked out on the statement period's eligible spend, summed then rounded down once (Mainly Miles)." },
       "cap_period": "statement_month",
-      "cap_basis": null,
+      "cap_basis": "posting_date",
       "caps": {
-        "fcy": { "sgd": 1200, "min_spend_sgd": 1000, "rank_until_min_met": "base", "hard_limit": true, "needs_verification": true, "notes": "Over S$1,200 may drop the whole category to 0.4 mpd; the app never recommends going past it." },
-        "petrol_contactless": { "sgd": 1200, "min_spend_sgd": 1000, "rank_until_min_met": "base", "hard_limit": true, "needs_verification": true, "notes": "Over S$1,200 may drop the whole category to 0.4 mpd; the app never recommends going past it." }
+        "fcy": { "sgd": 1200, "min_spend_sgd": 1000, "rank_until_min_met": "base", "label": "foreign currency", "notes": "Needs S$1,000 foreign-currency spend in the statement period; spend above S$1,200 earns 0.4 mpd." },
+        "petrol_contactless": { "sgd": 1200, "min_spend_sgd": 1000, "rank_until_min_met": "base", "label": "petrol & contactless", "notes": "Needs S$1,000 local spend in the category in the statement period; spend above S$1,200 earns 0.4 mpd." }
       },
       "min_spend": null,
       "bonus_rules": [
-        { "id": "fcy", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["FCY"], "match": { "mode": "all" }, "cap_bucket": "fcy", "needs_verification": true },
-        { "id": "petrol", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "whitelist", "mccs": ["5541", "5542"] }, "cap_bucket": "petrol_contactless", "needs_verification": true, "notes": "Petrol any method. Split out of the original rule; petrol codes are a guess." },
-        { "id": "contactless_simplygo", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "all" }, "cap_bucket": "petrol_contactless", "needs_verification": true }
+        { "id": "fcy", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["FCY"], "match": { "mode": "all" }, "cap_bucket": "fcy" },
+        { "id": "petrol", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "whitelist", "mccs": ["5541", "5542"] }, "cap_bucket": "petrol_contactless", "notes": "Petrol any way to pay (5541, 5542), except SPC and Shell, which earn nothing." },
+        { "id": "contactless_simplygo", "mpd": 4.0, "methods": ["mobile_tap", "physical_tap", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "all" }, "cap_bucket": "petrol_contactless", "notes": "Physical card and phone taps both count; in-app Apple Pay does not." }
       ],
-      "min_spend_failure_notes": "Miss S$1,000 in a category OR exceed S$1,200 in it and that category drops to 0.4 mpd for the whole statement period (per Mainly Miles; verify exact wording). Modelled as: ranked at base until S$1,000 is reached (then earlier purchases count too); S$1,200 is a hard limit and going past it counts the whole category at base. Check against UOB T&Cs.",
-      "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
+      "min_spend_failure_notes": "Under S$1,000 in a category in the statement period: that category earns 0.4 mpd. Above S$1,200: only the excess earns 0.4 mpd (Mainly Miles, Jul 2026). Modelled as: ranked at base until S$1,000 is reached (then earlier purchases count too); spend over S$1,200 is split like any other cap.",
+      "no_points": { "mccs": [], "merchants": ["SPC", "Shell"], "notes": ["any payment at SPC or Shell"], "needs_verification": true },
       "points_expiry_months": 24,
-      "source": "https://mainlymiles.com/review/uob-visa-signature",
+      "source": "https://mainlymiles.com/review/uob-visa-signature (updated 29 Jul 2026)",
       "last_verified": "2026-09-30"
     },
     {
@@ -366,8 +385,8 @@
       "base_mpd": { "local": 0.33, "fcy": 0.33 },
       "rates_other_programmes": { "base_mpd": { "local": 0.4, "fcy": 0.4 }, "bonus_mpd": 4.0, "notes": "Asia Miles/Avios at 2.5:1" },
       "fcy_fee_pct": 3.25,
-      "earn_block": { "type": "per_txn_nearest", "size_sgd": 1 },
-      "bonus_earn_block": { "type": "monthly_pooled_floor", "size_sgd": 1 },
+      "earn_block": { "type": "per_txn_nearest", "size_sgd": 1, "notes": "Disputed: Mainly Miles (Aug 2026) says base points round down per purchase; HSBC's TravelOne terms round to the nearest. Kept as nearest until a statement shows otherwise." },
+      "bonus_earn_block": { "type": "monthly_pooled_floor", "size_sgd": 1, "notes": "HSBC 10X terms (1 Apr 2026) clause 7.2: month's eligible spend rounded down to S$1." },
       "cap_period": "calendar_month",
       "cap_basis": "posting_date",
       "caps": {
@@ -405,13 +424,12 @@
       "fee_reminder": "Ask DBS for an annual fee waiver.",
       "points_currency": "DBS Points",
       "miles_per_point": 2,
-      "miles_per_point_needs_verification": true,
       "base_mpd": { "local": 0.4, "fcy": 1.2 },
       "base_notes": "Original keys were local_offline / fcy_offline.",
       "fcy_fee_pct": 3.25,
-      "earn_block": { "type": "per_txn_floor", "size_sgd": 1, "needs_verification": true, "notes": "Not in source; default assumed." },
+      "earn_block": { "type": "per_txn_floor", "size_sgd": 5, "notes": "10 DBS Points per S$5 online; 3 per S$5 overseas." },
       "cap_period": "calendar_month",
-      "cap_basis": null,
+      "cap_basis": "transaction_date",
       "caps": {
         "online": { "sgd": 1000 }
       },
@@ -420,7 +438,9 @@
         { "id": "all_online", "mpd": 4.0, "methods": ["online_card_entry"], "currencies": ["SGD", "FCY"], "match": { "mode": "blacklist", "mccs": [] }, "cap_bucket": "online" }
       ],
       "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
-      "source": "https://mainlymiles.com/credit-cards/",
+      "points_expiry": "1 year after they are earned",
+      "points_expiry_months": 12,
+      "source": "https://milelion.com/2026/08/11/review-dbs-womans-world-card/ (S$5 blocks, transaction date, 1-year expiry)",
       "last_verified": "2026-09-30"
     },
     {
@@ -436,23 +456,22 @@
       "fee_reminder": "Ask Standard Chartered for an annual fee waiver.",
       "points_currency": "360 Rewards Points (never expire)",
       "miles_per_point": 0.4,
-      "miles_per_point_needs_verification": true,
       "base_mpd": { "local": 1.2, "fcy": 2.0 },
       "fcy_fee_pct": 3.5,
-      "earn_block": { "type": "per_txn_floor", "size_sgd": 1, "needs_verification": true, "notes": "Not in source; default assumed." },
-      "cap_period": "calendar_month",
+      "earn_block": { "type": "per_txn_floor", "size_sgd": 1, "needs_verification": true, "notes": "SC rounds points to the nearest whole number; rounding down to S$1 may undercount by about a mile." },
+      "cap_period": "statement_month",
       "cap_basis": null,
       "caps": {
         "bonus": { "sgd": 1000 }
       },
       "min_spend": null,
       "bonus_rules": [
-        { "id": "transport_delivery_groceries_online", "mpd": 3.0, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "categories", "categories": ["rides", "public_transport", "food_delivery", "online_groceries"] }, "cap_bucket": "bonus", "needs_verification": true, "notes": "Original categories: transport, food delivery, online groceries." }
+        { "id": "transport_delivery_groceries_online", "mpd": 3.0, "methods": ["online_card_entry", "in_app_wallet"], "currencies": ["SGD"], "match": { "mode": "whitelist", "mccs": ["4111", "4121", "4789", "5411", "5811", "5812", "5814"] }, "cap_bucket": "bonus", "notes": "Online SGD transactions only: rides (Grab, CDG, Gojek), food delivery, online groceries. SimplyGo gantry taps are not online, so they earn 1.2 mpd (MileLion, Aug 2026)." }
       ],
       "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
       "extras": "2 lounge visits",
       "points_expiry_months": null,
-      "source": "https://mainlymiles.com/review/sc-journey",
+      "source": "https://milelion.com/2026/08/30/review-standard-chartered-journey-card/",
       "last_verified": "2026-09-30"
     },
     {
@@ -468,6 +487,7 @@
       "points_currency": "KrisFlyer miles (credited directly)",
       "miles_per_point": 1,
       "base_mpd": { "local": 1.2, "fcy": 1.2 },
+      "fcy_fee_pct": 3.25,
       "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
       "cap_period": null,
       "cap_basis": null,
@@ -518,21 +538,18 @@
       "tier": "general",
       "min_income_sgd": 30000,
       "annual_fee_sgd": 196.2,
-      "fee_notes": "First year free.",
+      "fee_notes": "First year free. The spend-based fee waiver was withdrawn on 1 Aug 2026.",
       "fee_reminder": "Ask DBS for an annual fee waiver.",
       "points_currency": "DBS Points (never expire on Altitude)",
       "miles_per_point": 2,
-      "miles_per_point_needs_verification": true,
       "base_mpd": { "local": 1.3, "fcy": 2.2 },
       "fcy_fee_pct": 3.25,
-      "earn_block": { "type": "per_txn_floor", "size_sgd": 1, "needs_verification": true, "notes": "Not in source; default assumed." },
+      "earn_block": { "type": "per_txn_floor", "size_sgd": 5, "notes": "3.25 DBS Points per S$5 local, 5.5 per S$5 overseas, points rounded down per purchase, so odd amounts can earn slightly less than shown." },
       "cap_period": null,
       "cap_basis": null,
       "caps": {},
       "min_spend": null,
-      "bonus_rules": [
-        { "id": "bonus_categories", "mpd": 2.2, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "categories", "categories": [] }, "cap_bucket": null, "needs_verification": true, "notes": "Source does not say which categories; matches nothing until filled in." }
-      ],
+      "bonus_rules": [],
       "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
       "extras": "2 lounge visits (Visa version)",
       "points_expiry_months": null,
@@ -635,7 +652,7 @@
       "base_mpd": { "local": 0.4, "fcy": 0.4 },
       "base_notes": "Original: local_selected 1.2, other 0.4, fcy 2.8, air_tickets 2.8, with S$800 min monthly spend. Split into bonus rules below.",
       "fcy_fee_pct": 3.25,
-      "earn_block": { "type": "per_txn_floor", "size_sgd": 1, "needs_verification": true, "notes": "Not in source; default assumed." },
+      "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
       "cap_period": "calendar_month",
       "cap_basis": null,
       "caps": {},
@@ -643,11 +660,11 @@
       "bonus_rules": [
         { "id": "fcy", "mpd": 2.8, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["FCY"], "match": { "mode": "all" }, "cap_bucket": null },
         { "id": "air_tickets", "mpd": 2.8, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD", "FCY"], "match": { "mode": "whitelist", "mccs": ["3000-3350", "4511"] }, "cap_bucket": null, "needs_verification": true, "notes": "Airline codes are a guess." },
-        { "id": "local_selected", "mpd": 1.2, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD"], "match": { "mode": "categories", "categories": [] }, "cap_bucket": null, "needs_verification": true, "notes": "Source does not say which local categories; matches nothing until filled in." }
+        { "id": "local_selected", "mpd": 1.2, "methods": ["mobile_tap", "physical_tap", "chip_or_swipe", "online_card_entry", "in_app_wallet", "simplygo"], "currencies": ["SGD"], "match": { "mode": "categories", "categories": ["dining", "hawker", "cafe", "fast_food", "bakery", "food_delivery", "groceries", "online_groceries", "rides", "petrol", "department_store", "hotels", "travel_agency"] }, "cap_bucket": null, "needs_verification": true, "notes": "Dining, food delivery, supermarkets, transport, petrol, department stores, selected retail, hotels, cruises, travel packages, car rental (Mainly Miles, Jul 2026). Categories mapped by us; 'selected retail' not modelled." }
       ],
       "no_points": { "mccs": [], "merchants": [], "notes": [], "needs_verification": true },
       "points_expiry_months": 12,
-      "source": "https://mainlymiles.com/review/maybank-hvs",
+      "source": "https://mainlymiles.com/review/maybank-hvs (updated 10 Jul 2026)",
       "last_verified": "2026-09-30"
     },
     {

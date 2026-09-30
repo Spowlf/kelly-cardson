@@ -3,7 +3,7 @@
 
 import { toCents, DEFAULT_BLOCK, isPooled, roundTxn, floorTo, pooledIncrement } from './rounding.js';
 import { cycleFor, addDays, formatDay } from './cycles.js';
-import { mccInList, merchantMatches, matchRule } from './match.js';
+import { mccInList, merchantMatches, matchRule, disputeApplies } from './match.js';
 
 export const DEFAULT_SETTINGS = { postingDelayDays: 3 };
 
@@ -31,6 +31,9 @@ export function indexCategories(categories) {
 
 export const cycleOf = (card, userCard, date) => cycleFor(date, card.cap_period, userCard?.statementDay);
 
+// A cap's name as she reads it: its label, or its id with spaces ("petrol_contactless" -> "petrol contactless").
+export const capName = (card, id) => card.caps?.[id]?.label || id.replace(/_/g, ' ');
+
 const periodWord = (card) => (card.cap_period === 'statement_month' ? 'this statement month' : 'this month');
 
 // Fill in the category's guessed code, currency and cents.
@@ -41,6 +44,7 @@ function resolve(purchase, categories) {
     cat,
     mcc: purchase.mcc || cat?.default_mcc || null,
     mccGuessed: !purchase.mcc && !!cat?.default_mcc,
+    recurring: purchase.recurring ?? !!cat?.recurring,
     cents: toCents(purchase.amount),
     currency: purchase.fcy ? 'FCY' : 'SGD',
   };
@@ -149,9 +153,9 @@ function bonusOption(card, rule, p, state, blocks, baseMpd) {
 
   if (!reason) {
     if (!bucket) reason = `${rule.mpd} mpd, no cap`;
-    else if (left === 0) reason = `${bucketId} cap full (${formatSgd(capCents)}): ${baseMpd} mpd`;
+    else if (left === 0) reason = `${capName(card, bucketId)} cap full (${formatSgd(capCents)}): ${baseMpd} mpd`;
     else {
-      reason = `${formatSgd(left)} of ${formatSgd(capCents)} ${bucketId} cap left`;
+      reason = `${formatSgd(left)} of ${formatSgd(capCents)} ${capName(card, bucketId)} cap left`;
       if (capUse < counted) reason += `: ${formatSgd(bonus)} at ${rule.mpd} mpd, ${formatSgd(base)} at ${baseMpd} mpd`;
     }
   }
@@ -173,7 +177,7 @@ function evaluate(card, p, state, ctx) {
   // differs only for monthly-pooled rounding (e.g. one SimplyGo fare adds 0 but is worth S$1.80 x mpd).
   const result = {
     cardId: card.id, method: p.method, miles: 0, rankMiles: 0, bonusSgd: 0, baseSgd: 0, mpd: baseMpd, baseMpd,
-    ruleId: null, bucket: null, capSgd: null, capLeftSgd: null, reason: '', warnings: [], avoid: false, pendingBonusSgd: 0, disputes: [],
+    ruleId: null, bucket: null, capName: null, capSgd: null, capLeftSgd: null, reason: '', warnings: [], avoid: false, pendingBonusSgd: 0, disputes: [],
     unconfirmed: !!(blocks.base.needs_verification || blocks.bonus.needs_verification),
     conditional: false, mccGuessed: p.mccGuessed, fcyFeeSgd: 0, costPerMileSgd: null,
   };
@@ -201,14 +205,16 @@ function evaluate(card, p, state, ctx) {
   const options = [];
   const skipped = [];
   const rejected = []; // disputed rules her statement showed don't apply here
+  const notRecurring = []; // rules that would apply, but exclude recurring payments
   const answers = settings.disputeAnswers || {};
   for (const rule of card.bonus_rules || []) {
     if (!(rule.currencies || ['SGD', 'FCY']).includes(p.currency)) continue;
     if (!rule.methods.includes(p.method)) continue;
     if (p.date && ((rule.valid_from && p.date < rule.valid_from) || (rule.valid_until && p.date > rule.valid_until))) continue;
     const m = matchRule(rule, p, userCard);
+    if (m.recurring) notRecurring.push(rule);
     if (!m.ok) continue;
-    const no = (rule.disputed || []).find((d) => !d.resolved && answers[d.id]?.answer === 'no' && merchantMatches(p.merchant, d.merchants));
+    const no = (rule.disputed || []).find((d) => !d.resolved && answers[d.id]?.answer === 'no' && disputeApplies(d, p));
     if (no) {
       rejected.push(answers[no.id]);
       continue;
@@ -232,6 +238,7 @@ function evaluate(card, p, state, ctx) {
       mpd: best.rule.mpd,
       ruleId: best.rule.id,
       bucket: best.bucketId,
+      capName: best.bucketId ? capName(card, best.bucketId) : null,
       capSgd: best.bucketId ? best.capCents / 100 : null,
       capLeftSgd: best.bucketId ? best.left / 100 : null,
       reason: best.miles === 0 && p.cents > 0 ? zeroReason(blocks.bonus, round2(best.expected)) : best.reason,
@@ -243,10 +250,10 @@ function evaluate(card, p, state, ctx) {
     result.unconfirmed ||= !!(best.matchUnconfirmed || best.rule.needs_verification || best.unconfirmed);
     if (best.rule.promotion && best.rule.valid_until) result.warnings.push(`Promotion ends ${formatDay(best.rule.valid_until)}`);
     for (const d of best.rule.disputed || []) {
-      if (d.resolved || answers[d.id]?.answer === 'yes' || !merchantMatches(p.merchant, d.merchants)) continue;
+      if (d.resolved || answers[d.id]?.answer === 'yes' || !disputeApplies(d, p)) continue;
       result.warnings.push(d.note);
       result.unconfirmed = true;
-      result.disputes.push({ id: d.id, note: d.note, question: d.question || `Did this earn the ${best.rule.mpd} mpd bonus?`, ruleId: best.rule.id });
+      result.disputes.push({ id: d.id, recurring: !!d.recurring, note: d.note, question: d.question || `Did this earn the ${best.rule.mpd} mpd bonus?`, ruleId: best.rule.id });
     }
     delta.buckets = best.delta.buckets;
     delta.pools = best.delta.pools;
@@ -265,6 +272,10 @@ function evaluate(card, p, state, ctx) {
 
   for (const a of rejected) {
     result.warnings.push(`Your ${a.statementDate ? `${formatDay(a.statementDate)} ` : ''}statement showed no bonus here, so this counts at ${baseMpd} mpd.`);
+  }
+
+  for (const rule of notRecurring) {
+    if (rule.mpd > result.mpd) result.warnings.push(`Recurring payments don't earn the ${rule.mpd} mpd bonus on this card: ${result.baseMpd} mpd`);
   }
 
   for (const rule of skipped) {
@@ -367,6 +378,7 @@ export function summarizeCycle({ card, userCard, categories, settings, txns, dat
     }
     const pct = Math.floor((used * 100) / capCents);
     buckets[id] = {
+      name: capName(card, id),
       usedSgd: used / 100,
       capSgd: capCents / 100,
       leftSgd: (capCents - used) / 100,

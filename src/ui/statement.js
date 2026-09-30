@@ -2,7 +2,7 @@
 
 import { h, field, sheet, toast, money, shortName, fill } from './dom.js';
 import { state, saveStatement, saveTxn, answerDispute } from '../db/repo.js';
-import { statementCheck, catchUpTxn, disputedInStatement, cycleFor, addDays, formatDay, today } from '../engine/index.js';
+import { statementCheck, catchUpTxn, disputedInStatement, capName, cycleFor, addDays, formatDay, today } from '../engine/index.js';
 
 export function openStatementCheck(cardId, onDone) {
   const card = state.cardsById[cardId];
@@ -40,17 +40,18 @@ export function openStatementCheck(cardId, onDone) {
   }
 
   async function answer(dispute, txn, value) {
+    const what = dispute.recurring ? 'Recurring payments' : txn.merchant;
     await answerDispute(dispute.id, { answer: value, cardId, ruleId: dispute.ruleId, merchant: txn.merchant, txnId: txn.id, statementDate: dateInput.value });
     toast(value === 'yes'
-      ? `Confirmed: ${txn.merchant} earns the bonus on ${shortName(card)}.`
-      : `Noted: ${txn.merchant} now counts at the base rate on ${shortName(card)}. Your next backup carries this for the card rules.`);
+      ? `Confirmed: ${what} earn${dispute.recurring ? '' : 's'} the bonus on ${shortName(card)}.`
+      : `Noted: ${what} now count${dispute.recurring ? '' : 's'} at the base rate on ${shortName(card)}. Your next backup carries this for the card rules.`);
     renderDisputes();
     onDone?.();
   }
   const totalInput = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00', class: 'amount-input', oninput: () => update() });
   const bucketInput = h('select', {},
     h('option', { value: '' }, 'All of this card\'s caps'),
-    Object.keys(card.caps || {}).map((b) => h('option', { value: b }, `${b} cap only`)));
+    Object.keys(card.caps || {}).map((b) => h('option', { value: b }, `${capName(card, b)} cap only`)));
   const outcome = h('div', { class: 'statement-outcome', 'aria-live': 'polite' });
   let s;
   let check = null;

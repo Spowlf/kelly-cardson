@@ -102,9 +102,14 @@ export function renderAdd(root, { go }) {
     if (!(Number(f.amount) > 0)) return;
     const txn = await saveTxn({ ...f, amount: Number(f.amount) });
     toast(`Saved ${money(txn.amount)}${txn.merchant ? ` at ${txn.merchant}` : ''}`, { label: 'Undo', run: async () => { await deleteTxn(txn.id); toast('Removed'); } });
+    // Card, method and date stay for a run of purchases; merchant details don't carry over.
     f.amount = '';
     f.merchant = '';
+    f.category = '';
+    f.fcy = false;
     merchantInput.value = '';
+    categoryInput.value = '';
+    fcyInput.checked = false;
     renderAmount();
     renderRecent();
   }

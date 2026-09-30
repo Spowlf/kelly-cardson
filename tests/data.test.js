@@ -52,11 +52,12 @@ for (const card of cards) {
       for (const d of [r.valid_from, r.valid_until].filter(Boolean)) assert.match(d, /^\d{4}-\d{2}-\d{2}$/, `${r.id} date ${d}`);
       if (r.promotion) assert.ok(r.valid_until, `${r.id} promotion needs valid_until`);
       for (const d of r.disputed || []) {
-        assert.ok(d.id && d.merchants?.length && d.note && d.question, `${r.id} disputed entry needs id, merchants, note, question`);
+        assert.ok(d.id && (d.merchants?.length || d.recurring === true) && d.note && d.question, `${r.id} disputed entry needs id, merchants (or recurring: true), note, question`);
         assert.ok(!disputeIds.has(d.id), `duplicate dispute id ${d.id}`);
         disputeIds.add(d.id);
       }
-      for (const m of r.match.mccs || []) assert.match(m, MCC, `${r.id} code ${m}`);
+      for (const m of [...(r.match.mccs || []), ...(r.match.exclude_mccs || []), ...Object.values(r.match.option_mccs || {}).flat()]) assert.match(m, MCC, `${r.id} code ${m}`);
+      for (const o of Object.keys(r.match.option_mccs || {})) assert.ok(r.match.options?.includes(o), `${r.id} option_mccs ${o} is not an option`);
       const cats = [...(r.match.categories || []), ...Object.values(r.match.option_categories || {}).flat()];
       for (const c of cats) assert.ok(CATEGORY_IDS.has(c), `${r.id} category ${c}`);
     }
@@ -68,5 +69,6 @@ test('categories', () => {
     assert.match(c.default_mcc, MCC, c.id);
     assert.equal(c.mcc_is_guess, true, c.id);
     assert.ok(['in_person', 'online', 'transit'].includes(c.channel), c.id);
+    assert.ok(!(c.no_miles && c.recurring), `${c.id}: recurring categories earn miles`);
   }
 });

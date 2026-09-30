@@ -20,10 +20,16 @@ export function renderHistory(root) {
 }
 
 const methodOptions = (value) => Object.entries(METHOD_NAMES).map(([v, label]) => h('option', { value: v, selected: v === value }, label));
-const cardOptions = (value, allowNone) => [
-  allowNone ? h('option', { value: '', selected: !value }, 'None') : null,
-  ...state.myCards.map((c) => h('option', { value: c.cardId, selected: c.cardId === value }, shortName(state.cardsById[c.cardId]))),
-];
+// Her cards, plus the current one if she has since removed it, so saving never moves a purchase silently.
+const cardOptions = (value, allowNone) => {
+  const ids = state.myCards.map((c) => c.cardId);
+  if (value && !ids.includes(value)) ids.push(value);
+  const label = (id) => (state.cardsById[id] ? shortName(state.cardsById[id]) : id) + (state.myCards.some((c) => c.cardId === id) ? '' : ' (removed)');
+  return [
+    allowNone ? h('option', { value: '', selected: !value }, 'None') : null,
+    ...ids.map((id) => h('option', { value: id, selected: id === value }, label(id))),
+  ];
+};
 
 function purchases(render) {
   const list = [...state.txns].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt));
@@ -58,7 +64,9 @@ function editTxn(t, render) {
       e.preventDefault();
       const value = Number(amount.value.replace(/[^\d.]/g, ''));
       if (!(value > 0)) { amount.setCustomValidity('Enter an amount above zero'); amount.reportValidity(); return; }
-      await saveTxn({ ...t, amount: value, merchant: merchant.value, date: date.value || t.date, cardId: card.value, method: method.value, category: category.value, fcy: fcy.checked });
+      // A catch-up has no method or category; its hidden fields must not give it one.
+      const details = t.isCatchUp ? { method: t.method, category: t.category } : { method: method.value, category: category.value };
+      await saveTxn({ ...t, ...details, amount: value, merchant: merchant.value, date: date.value || t.date, cardId: card.value, fcy: fcy.checked });
       s.close();
       toast('Purchase updated');
       render();

@@ -42,6 +42,6 @@
     { "id": "education", "label": "Education", "channel": "online", "default_mcc": "8299", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
     { "id": "government", "label": "Government / tax / fines / parking", "channel": "online", "default_mcc": "9399", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
     { "id": "ewallet_topup", "label": "E-wallet top-up", "channel": "online", "default_mcc": "6540", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
-    { "id": "subscriptions", "label": "Recurring subscriptions", "channel": "online", "default_mcc": "5968", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card", "notes": "Treated as no miles per your instruction. Some cards do earn on some subscriptions (e.g. Maybank XL 4899 streaming); the recommender still skips them." }
+    { "id": "subscriptions", "label": "Recurring subscriptions", "channel": "online", "default_mcc": "5968", "mcc_is_guess": true, "recurring": true, "notes": "Ranked like other online spend. Cards whose online bonus excludes recurring payments (match.exclude_recurring) earn base on these." }
   ]
 }

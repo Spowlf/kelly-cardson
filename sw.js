@@ -1,6 +1,6 @@
 // Offline support. Every app file is saved on the phone at install, then served from there
 // instantly and refreshed in the background (stale-while-revalidate), so the app opens at a till
-// with no signal and picks up new code or card rules the next time it's opened online.
+// with no signal. When a refresh brings a changed file, open pages are told so she can reload.
 // tests/sw.test.js checks this list covers every app file.
 
 const CACHE = 'miles-v1';
@@ -39,6 +39,22 @@ const FILES = [
   'src/ui/which.js',
 ];
 
+async function sameBody(a, b) {
+  const [x, y] = await Promise.all([a.arrayBuffer(), b.arrayBuffer()]);
+  if (x.byteLength !== y.byteLength) return false;
+  const u = new Uint8Array(x);
+  const v = new Uint8Array(y);
+  for (let i = 0; i < u.length; i++) if (u[i] !== v[i]) return false;
+  return true;
+}
+
+// A cached file changed on the server (new card rules or app code): tell open pages, which
+// offer "Updated, tap to reload" so she never runs on stale rules without knowing.
+async function announce(url) {
+  const pages = await self.clients.matchAll({ type: 'window' });
+  for (const page of pages) page.postMessage({ type: 'updated', url });
+}
+
 self.addEventListener('install', (event) => {
   // cache: 'reload' skips the browser's HTTP cache so a new install gets fresh files.
   event.waitUntil(caches.open(CACHE)
@@ -58,8 +74,15 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(req, { ignoreSearch: true });
+    const before = cached?.clone();
     const fresh = fetch(req)
-      .then((res) => { if (res.ok) cache.put(req, res.clone()); return res; })
+      .then(async (res) => {
+        if (!res.ok) return res;
+        const changed = before && !(await sameBody(before, res.clone()));
+        await cache.put(req, res.clone());
+        if (changed) await announce(req.url);
+        return res;
+      })
       .catch(() => null);
     if (cached) {
       event.waitUntil(fresh);

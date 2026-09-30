@@ -13,7 +13,7 @@
 - Posting delay is a setting, default 3 days. Show "may count next month" within that window of a reset.
 - Round the whole purchase first, then split over a cap. Round down both parts.
 - Maybank XL under S$500: rank at 4 mpd with a "needs S$X more this month" warning.
-- UOB Visa Signature: rank at 0.4 until S$1,000 in the category ("4 mpd once S$X more is spent in this category"). S$1,200 is a hard limit: never recommend going past it (`caps.*.hard_limit`, unconfirmed).
+- UOB Visa Signature: rank at 0.4 until S$1,000 in the category ("4 mpd once S$X more is spent in this category"). Above S$1,200 only the excess earns 0.4 (Mainly Miles, Jul 2026), so it is an ordinary cap. `caps.*.hard_limit` stays in the engine for any card that does drop a whole category.
 - Monthly-pooled rounding (SimplyGo on UOB, HSBC bonus): rank by miles over the month (`rankMiles`), show the exact per-purchase figure.
 - Ranking ties: most cap left, then her priority order in My cards (default: order added). Cards that would break a hard limit go last.
 - Catch-up entries: base rate, count against every cap unless she picks one. Offer only when statement > logged; otherwise just show the gap.
@@ -31,5 +31,7 @@
 - Reminders: statements 7 days ahead and unchecked statements for 10 days after; annual fees within 30 days either side (text from `fee_reminder` in cards.json); sign-up deadlines within 30 days; backup after 7 days.
 - Backup import replaces everything in one IndexedDB transaction (all or nothing).
 - Disputed rules (sources disagree): each `disputed` entry has an `id` and a `question`. Purchases relying on one show "check on statement"; the statement check asks her yes/no. Her answers live on the phone (`settings.disputeAnswers`) and apply at once (no = base rate for that merchant on that card). To carry them into cards.json: `node scripts/apply-dispute-answers.mjs <backup.json>` shows the diff; add `--apply` only after the user approves it.
+- Subscriptions are an ordinary online category with `recurring: true` (not "no miles"). Rules with `match.exclude_recurring` (UOB Preferred Visa online) earn base on them; Citi Rewards online has a `recurring: true` dispute ("check on statement"). The other no-miles categories stay no-miles.
+- When the service worker fetches a changed file (e.g. `data/cards.json`), or a new worker takes over, the page shows "Updated, tap to reload".
 - Offline: `sw.js` precaches every app file (stale-while-revalidate). When adding a file under `src/`, add it to `FILES` in `sw.js`; `tests/sw.test.js` fails otherwise. Bump `CACHE` only to force-drop old caches.
 - Hosting: GitHub Pages serves the repo root; all paths are relative so it works under `/<repo>/`.

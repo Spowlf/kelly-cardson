@@ -16,6 +16,9 @@ function parseList(list) {
   return parsed;
 }
 
+// Does a disputed entry cover this purchase? By merchant name, or all recurring payments.
+export const disputeApplies = (d, purchase) => merchantMatches(purchase.merchant, d.merchants) || (!!d.recurring && !!purchase.recurring);
+
 // True if a 4-digit code is in a list of codes and 'from-to' ranges.
 export function mccInList(mcc, list) {
   if (!mcc || !list?.length) return false;
@@ -36,11 +39,13 @@ export function merchantMatches(merchant, names) {
 /**
  * Does a bonus rule's `match` apply to this purchase?
  * Returns { ok, unconfirmed }: rules matched by category, merchant name or her chosen
- * category are unconfirmed (no category codes behind them).
+ * category are unconfirmed (no category codes behind them), unless the chosen option lists codes.
  */
 export function matchRule(rule, purchase, userCard) {
   const m = rule.match || { mode: 'all' };
   if (m.exclude_merchants?.length && merchantMatches(purchase.merchant, m.exclude_merchants)) return { ok: false, unconfirmed: false };
+  if (mccInList(purchase.mcc, m.exclude_mccs)) return { ok: false, unconfirmed: false };
+  if (m.exclude_recurring && purchase.recurring) return { ok: false, unconfirmed: false, recurring: true };
   switch (m.mode) {
     case 'all':
       return { ok: true, unconfirmed: false };
@@ -54,6 +59,9 @@ export function matchRule(rule, purchase, userCard) {
       return { ok: merchantMatches(purchase.merchant, m.merchants), unconfirmed: true };
     case 'user_category': {
       const choice = userCard?.choices?.[m.user_setting];
+      // Published category codes for the option decide; otherwise fall back to our categories.
+      const mccs = choice && m.option_mccs?.[choice];
+      if (mccs) return { ok: mccInList(purchase.mcc, mccs), unconfirmed: false };
       const cats = (choice && m.option_categories?.[choice]) || [];
       return { ok: !!purchase.category && cats.includes(purchase.category), unconfirmed: true };
     }

@@ -1,7 +1,8 @@
 // Turns her statement answers on disputed rules (from a Miles backup file) into cards.json edits.
 //   yes -> the dispute is marked resolved: "confirmed" (rate stays, no more badge)
-//   no  -> the merchant is added to the rule's match.exclude_merchants (base rate), and the
-//          dispute is marked resolved: "base_rate"
+//   no  -> the merchant is added to the rule's match.exclude_merchants (base rate), or for a
+//          recurring-payments dispute match.exclude_recurring is set; the dispute is marked
+//          resolved: "base_rate"
 // Shows the diff and changes nothing unless --apply is given.
 //
 //   node scripts/apply-dispute-answers.mjs path/to/miles-backup.json [--apply]
@@ -55,12 +56,17 @@ for (const [id, a] of Object.entries(answers)) {
     const cardAt = text.indexOf(`"id": "${card.id}",`);
     const ruleAt = text.indexOf(`"id": "${rule.id}",`, cardAt);
     const matchAt = text.indexOf('"match": {', ruleAt);
+    if (d.recurring && !d.merchants?.length) {
+      if (!rule.match.exclude_recurring) insertAfter(matchAt, '"match": {', ' "exclude_recurring": true,');
+      summary.push(`${card.name}, recurring payments: statement said NO -> base rate from now on`);
+      continue;
+    }
     const existing = text.indexOf('"exclude_merchants": [', matchAt);
     const matchEnd = text.indexOf('}', matchAt);
     if (existing > -1 && existing < matchEnd) insertAfter(existing, '"exclude_merchants": [', `${d.merchants.map((m) => JSON.stringify(m)).join(', ')}, `);
     else insertAfter(matchAt, '"match": {', ` "exclude_merchants": ${JSON.stringify(d.merchants)},`);
   }
-  summary.push(`${card.name}, ${d.merchants.join('/')}: statement said ${a.answer.toUpperCase()} -> ${a.answer === 'yes' ? 'rate confirmed' : 'base rate from now on'}`);
+  summary.push(`${card.name}, ${d.merchants?.join('/') || 'recurring payments'}: statement said ${a.answer.toUpperCase()} -> ${a.answer === 'yes' ? 'rate confirmed' : 'base rate from now on'}`);
 }
 
 JSON.parse(text); // never write broken JSON

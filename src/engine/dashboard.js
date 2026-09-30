@@ -194,7 +194,7 @@ export function kiasumilesPrompt({ purchase, cards, myCards, txns = [], categori
     const ids = Object.keys(s.buckets);
     const left = ids.filter((id) => s.buckets[id].leftSgd > 0);
     if (ids.length && !left.length) continue;
-    const note = left.length < ids.length ? ` (${left.join(' and ')} cap only)` : '';
+    const note = left.length < ids.length ? ` (${left.map((id) => s.buckets[id].name).join(' and ')} cap only)` : '';
     listed.push(`${shortName(card)}${card.kiasumiles_id ? ` [${card.kiasumiles_id}]` : ''}${note}`);
   }
   const how = KM_METHODS[purchase.method] || 'any method (compare them)';

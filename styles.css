@@ -498,6 +498,32 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .toast-action:hover { background: rgb(255 255 255 / 0.1); }
 .toast-action:focus-visible { outline: 2px solid var(--accent-soft); }
 
+/* New files arrived (card rules or app code): a pill at the top until she reloads. */
+.update {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--s2));
+  left: 50%;
+  min-height: 40px;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 var(--t-s) var(--font-text);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: update-in 0.4s var(--spring);
+  z-index: 30;
+}
+.update:hover { background: var(--accent-press); }
+.update:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.update:active { transform: translateX(-50%) scale(0.96); }
+@keyframes update-in {
+  from { opacity: 0; transform: translate(-50%, -12px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
 /* ---- Overview ------------------------------------------------------------------------ */
 
 .reminders { list-style: none; margin: 0 0 var(--s4); padding: 0; display: grid; gap: var(--s2); }

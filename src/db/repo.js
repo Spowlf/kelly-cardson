@@ -103,7 +103,8 @@ export async function moveMyCard(cardId, direction) {
   if (j < 0 || j >= list.length) return;
   list.forEach((c, n) => { c.priority = n + 1; });
   [list[i].priority, list[j].priority] = [list[j].priority, list[i].priority];
-  await db.putMany('myCards', [list[i], list[j]]);
+  // Save every card: renumbering changed them all, and gaps left by removed cards would reorder them on reload.
+  await db.putMany('myCards', list);
   sortByPriority(list);
 }
 

@@ -50,8 +50,20 @@ async function start() {
 
 start();
 
+// New card rules or app code were fetched in the background: offer a reload.
+function showUpdate() {
+  const button = document.getElementById('update');
+  if (!button.hidden) return;
+  button.onclick = () => location.reload();
+  button.hidden = false;
+}
+
 // Offline support, and ask the browser not to clear this site's storage under pressure.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'updated') showUpdate(); });
+  // A new service worker taking over an already-controlled page means new app files too.
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdate(); });
 }
 navigator.storage?.persist?.().catch(() => {});

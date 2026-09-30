@@ -138,7 +138,7 @@ export function renderWhich(root, { go }) {
     const capAfter = b.bucket && b.capSgd > 0 && b.capLeftSgd > 0 ? b.capSgd - b.capLeftSgd + b.bonusSgd + b.pendingBonusSgd : 0;
     const lines = [
       hint && h('p', { class: 'hint' }, hint),
-      capAfter > 0 && capAfter >= b.capSgd * 0.85 ? h('p', { class: 'warning' }, `After this, at least ${money(Math.min(capAfter, b.capSgd))} of the ${money(b.capSgd)} ${b.bucket} cap will be used.`) : null,
+      capAfter > 0 && capAfter >= b.capSgd * 0.85 ? h('p', { class: 'warning' }, `After this, at least ${money(Math.min(capAfter, b.capSgd))} of the ${money(b.capSgd)} ${b.capName} cap will be used.`) : null,
       ...b.warnings.map((w) => h('p', { class: 'warning' }, w)),
       b.fcyFeeSgd ? h('p', { class: 'fee' }, `Foreign-currency fee ${money(b.fcyFeeSgd)}${b.costPerMileSgd ? `, S$${b.costPerMileSgd.toFixed(4)} a mile` : ''}`) : null,
     ];

@@ -42,7 +42,7 @@ Every card in data/cards.json (tests the data broadly). Cards: UOB Preferred Vis
 
 - **p01 Din Tai Fung S$45 (mobile_tap)**: ours Maybank XL Rewards: 4 mpd, 180 miles — Needs S$455 more this month on this card, or all its spend earns 0.4 mpd · KiasuMiles Maybank XL Rewards: 4 mpd, 180 miles (conditional); guaranteed: BOC Elite Miles 1.4 mpd
 - **p03 foodpanda S$28 (online_card_entry)**: ours Citi Rewards Mastercard: 4 mpd, 112 miles (unconfirmed) — Sources disagree on foodpanda: KiasuMiles says 0.4 mpd (it seems to treat Citi's online bonus as a category list). Confirm on your first statement. · KiasuMiles DBS Woman's World Mastercard: 4 mpd, 110 miles (conditional); guaranteed: BOC Elite Miles 1.4 mpd
-- **p07 Uniqlo S$60 (mobile_tap)**: ours OCBC Rewards: 4 mpd, 240 miles (unconfirmed) · KiasuMiles Citi Rewards Mastercard: 4 mpd, 240 miles (conditional); guaranteed: UOB PRVI Miles 1.4 mpd
+- **p07 Uniqlo S$60 (mobile_tap)**: ours OCBC Rewards: 4 mpd, 240 miles · KiasuMiles Citi Rewards Mastercard: 4 mpd, 240 miles (conditional); guaranteed: UOB PRVI Miles 1.4 mpd
 - **p11 Golden Village S$30 (online_card_entry)**: ours Citi Rewards Mastercard: 4 mpd, 120 miles (unconfirmed) — Sources disagree on Golden Village online: KiasuMiles says 0.4 mpd (it seems to treat Citi's online bonus as a category list). Confirm on your first statement. · KiasuMiles Maybank XL Rewards: 4 mpd, 120 miles (conditional); guaranteed: UOB PRVI Miles 1.4 mpd
 
 ## KiasuMiles couldn't answer (3)

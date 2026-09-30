@@ -79,7 +79,7 @@ function capBar(b) {
   const tone = b.overLimit ? 'over' : b.warn ? 'warn' : 'ok';
   return h('div', { class: 'cap' },
     h('div', { class: 'cap-line' },
-      h('span', { class: 'cap-name' }, `${b.id[0].toUpperCase()}${b.id.slice(1)} cap`),
+      h('span', { class: 'cap-name' }, `${b.name[0].toUpperCase()}${b.name.slice(1)} cap`),
       h('span', { class: 'cap-left' }, `${money(b.leftSgd)} left`)),
     progress(b.pct, tone, b.label),
     h('p', { class: 'cap-sub' }, `${b.label}, resets ${formatDay(b.resetDate)}`),
