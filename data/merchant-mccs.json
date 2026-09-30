@@ -1,0 +1,380 @@
+{
+  "_meta": {
+    "description": "Category codes (MCCs) reported online for merchants in data/merchants.prefill.json. Status 'reported' = published by a third party, not confirmed by her statement.",
+    "compiled": "2026-09-30 (updated with bank documents)",
+    "sources": {
+      "moneysmart": "MoneySmart, 'Guide To Popular Merchant Category Codes (MCCs) in Singapore', updated Jan 2026 (checked by the author against Mastercard's list and WhatCard/HeyMax). Preferred source.",
+      "mccexplorer": "MCC Explorer, Singapore MCC Codes Guide (accessed 30 Sep 2026). Generic lookup site; disagrees with MoneySmart on several merchants. Used only where MoneySmart has no entry.",
+      "heymax": "HeyMax blog, 'Understanding MCCs in Singapore', Apr 2025.",
+      "milelion": "The MileLion, Visa Supplier Locator article (GrabPay top-up codes).",
+      "ocbc365": "OCBC 365 Card cashback T&Cs (1 Aug 2023): defines dining as 5811/5812, plus foodpanda, GrabFood and Deliveroo when they code under those or 5814."
+    },
+    "warnings": [
+      "There is no official public list matching Singapore merchants to codes. Codes are set by each merchant's payment processor, can differ between Visa and Mastercard, between outlets, and over time.",
+      "Where sources disagree, 'mcc' is the preferred source's code and 'alt_mccs' lists the others.",
+      "Merchants not listed here had no reliable published code; keep their category default and let the statement check confirm them."
+    ]
+  },
+  "merchants": [
+    {
+      "merchant": "McDonald's",
+      "mcc": "5814",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "KFC",
+      "mcc": "5814",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Subway",
+      "mcc": "5814",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Old Chang Kee",
+      "mcc": "5814",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Toast Box",
+      "mcc": "5812",
+      "sources": [
+        "moneysmart"
+      ],
+      "note": "Restaurant code, not fast food."
+    },
+    {
+      "merchant": "Bengawan Solo",
+      "mcc": "5462",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "foodpanda",
+      "mcc": "5499",
+      "alt_mccs": [
+        "5812",
+        "5814"
+      ],
+      "sources": [
+        "moneysmart",
+        "mccexplorer",
+        "ocbc365"
+      ],
+      "note": "MoneySmart: 5499. MCC Explorer: 5812. OCBC's own terms expect these apps to code under 5811/5812/5814. All of 5499, 5812 and 5814 are on UOB Preferred Visa's online list (UOB T&Cs Ver 3.0), so the result is the same for her. Matters for Maybank XL, whose dining list excludes 5499."
+    },
+    {
+      "merchant": "GrabFood",
+      "mcc": "5499",
+      "alt_mccs": [
+        "5812",
+        "5814"
+      ],
+      "sources": [
+        "moneysmart",
+        "mccexplorer",
+        "ocbc365"
+      ],
+      "note": "MoneySmart: 5499. MCC Explorer: 5812. OCBC's own terms expect these apps to code under 5811/5812/5814. All of 5499, 5812 and 5814 are on UOB Preferred Visa's online list (UOB T&Cs Ver 3.0), so the result is the same for her. Matters for Maybank XL, whose dining list excludes 5499."
+    },
+    {
+      "merchant": "Deliveroo",
+      "mcc": "5499",
+      "alt_mccs": [
+        "5812",
+        "5814"
+      ],
+      "sources": [
+        "moneysmart",
+        "mccexplorer",
+        "ocbc365"
+      ],
+      "note": "MoneySmart: 5499. MCC Explorer: 5812. OCBC's own terms expect these apps to code under 5811/5812/5814. All of 5499, 5812 and 5814 are on UOB Preferred Visa's online list (UOB T&Cs Ver 3.0), so the result is the same for her. Matters for Maybank XL, whose dining list excludes 5499."
+    },
+    {
+      "merchant": "FairPrice",
+      "mcc": "5411",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Cold Storage",
+      "mcc": "5411",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Giant",
+      "mcc": "5411",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Sheng Siong",
+      "mcc": "5411",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Don Don Donki",
+      "mcc": "5411",
+      "sources": [
+        "moneysmart"
+      ],
+      "note": "Codes as a supermarket, not a department store."
+    },
+    {
+      "merchant": "RedMart",
+      "mcc": "5411",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ],
+      "note": "RedMart orders on Lazada code separately from other Lazada orders."
+    },
+    {
+      "merchant": "7-Eleven",
+      "mcc": "5499",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Grab",
+      "mcc": "4121",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ],
+      "note": "Rides only. GrabFood and GrabPay top-ups code differently."
+    },
+    {
+      "merchant": "Gojek",
+      "mcc": "4121",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "CDG Zig",
+      "mcc": "4121",
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ],
+      "note": "Reported as 'Comfort' / 'ComfortDelGro'."
+    },
+    {
+      "merchant": "GrabPay top-up",
+      "mcc": "6540",
+      "alt_mccs": [
+        "6051",
+        "7399"
+      ],
+      "sources": [
+        "milelion",
+        "mccexplorer",
+        "moneysmart"
+      ],
+      "note": "MileLion: 6540 on Mastercard, 6051 on Visa. MoneySmart lists GrabPay as 7399. Treated as a top-up, which earns no miles on her cards either way."
+    },
+    {
+      "merchant": "Shopee",
+      "mcc": "5399",
+      "alt_mccs": [
+        "5331",
+        "5262"
+      ],
+      "sources": [
+        "moneysmart",
+        "heymax",
+        "mccexplorer"
+      ],
+      "note": "MoneySmart gives both 5331 and 5399 in different tables; HeyMax 5399; MCC Explorer 5262. Individual sellers can code differently. All three codes are on UOB Preferred Visa's online list, so the result is the same for her."
+    },
+    {
+      "merchant": "Lazada",
+      "mcc": "5311",
+      "alt_mccs": [
+        "5262"
+      ],
+      "sources": [
+        "moneysmart",
+        "heymax",
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Amazon.sg",
+      "mcc": "5999",
+      "alt_mccs": [
+        "5942"
+      ],
+      "sources": [
+        "moneysmart",
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Taobao",
+      "mcc": "5311",
+      "alt_mccs": [
+        "5411"
+      ],
+      "sources": [
+        "moneysmart"
+      ],
+      "note": "MoneySmart reports the app as 5311 and the website as 5411."
+    },
+    {
+      "merchant": "Uniqlo",
+      "mcc": "5651",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "H&M",
+      "mcc": "5691",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Zara",
+      "mcc": "5691",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Cotton On",
+      "mcc": "5691",
+      "sources": [
+        "moneysmart"
+      ],
+      "note": "Cotton On Kids reported as 5641."
+    },
+    {
+      "merchant": "Love Bonito",
+      "mcc": "5621",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Challenger",
+      "mcc": "5732",
+      "sources": [
+        "moneysmart"
+      ]
+    },
+    {
+      "merchant": "Singapore Airlines",
+      "mcc": "3075",
+      "sources": [
+        "mccexplorer"
+      ],
+      "note": "Airline code range 3000-3350."
+    },
+    {
+      "merchant": "Scoot",
+      "mcc": "3000",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Agoda",
+      "mcc": "4722",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Booking.com",
+      "mcc": "4722",
+      "sources": [
+        "mccexplorer"
+      ]
+    },
+    {
+      "merchant": "Klook",
+      "mcc": "4722",
+      "sources": [
+        "mccexplorer"
+      ]
+    }
+  ],
+  "not_found": [
+    "Burger King",
+    "Jollibee",
+    "MOS Burger",
+    "Popeyes",
+    "Ya Kun Kaya Toast",
+    "Starbucks",
+    "The Coffee Bean & Tea Leaf",
+    "Luckin Coffee",
+    "LiHO",
+    "KOI Thé",
+    "Gong Cha",
+    "Chagee",
+    "Koufu",
+    "Kopitiam",
+    "Food Republic",
+    "BreadTalk",
+    "Mr Bean",
+    "Din Tai Fung",
+    "Haidilao",
+    "Sushi Tei",
+    "Genki Sushi",
+    "Saizeriya",
+    "Swensen's",
+    "FairPrice Online",
+    "Cheers",
+    "TADA",
+    "TikTok Shop",
+    "Zalora",
+    "Takashimaya",
+    "Isetan",
+    "Metro",
+    "Tangs",
+    "Courts",
+    "Harvey Norman",
+    "Best Denki",
+    "Apple Store",
+    "Watsons",
+    "Guardian",
+    "Unity",
+    "Sephora",
+    "Popular",
+    "Kinokuniya",
+    "Decathlon",
+    "Golden Village",
+    "Shaw Theatres",
+    "Trip.com",
+    "Netflix",
+    "Spotify",
+    "Disney+",
+    "Apple iCloud",
+    "SP Group",
+    "YouTrip top-up"
+  ]
+}
