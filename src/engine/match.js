@@ -36,6 +36,15 @@ export function merchantMatches(merchant, names) {
   return names.some((name) => new RegExp(`(^|\\W)${escape(name)}($|\\W)`, 'i').test(merchant));
 }
 
+// Only listed codes earn this rule's bonus (a whitelist, or her chosen option's published codes),
+// so the exact category code decides it.
+export function ruleNeedsCode(rule, userCard) {
+  const m = rule?.match;
+  if (!m) return false;
+  if (m.mode === 'whitelist') return true;
+  return m.mode === 'user_category' && !!m.option_mccs?.[userCard?.choices?.[m.user_setting]];
+}
+
 /**
  * Does a bonus rule's `match` apply to this purchase?
  * Returns { ok, unconfirmed }: rules matched by category, merchant name or her chosen

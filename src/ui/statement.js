@@ -1,8 +1,8 @@
 // Monthly statement check: enter the statement total, see the gap from what's logged, add a catch-up.
 
 import { h, field, sheet, toast, money, shortName, capitalize, fill } from './dom.js';
-import { state, saveStatement, saveTxn, answerDispute } from '../db/repo.js';
-import { statementCheck, catchUpTxn, disputedInStatement, capName, cycleFor, addDays, formatDay, today } from '../engine/index.js';
+import { state, saveStatement, saveTxn, answerDispute, saveStatementResult, engineTxns } from '../db/repo.js';
+import { statementCheck, catchUpTxn, statementQuestions, capName, cycleFor, addDays, formatDay, today } from '../engine/index.js';
 
 export function openStatementCheck(cardId, onDone) {
   const card = state.cardsById[cardId];
@@ -22,30 +22,36 @@ export function openStatementCheck(cardId, onDone) {
   }
 
   const disputes = h('div', { class: 'disputes' });
-  const dateInput = h('select', { onchange: () => { update(); renderDisputes(); } }, dates.map((x) => h('option', { value: x }, formatDay(x))));
+  const dateInput = h('select', { onchange: () => { update(); renderQuestions(); } }, dates.map((x) => h('option', { value: x }, formatDay(x))));
+  const changes = []; // what her answers changed, for the summary line
 
-  // Purchases on this statement that rely on a rule sources disagree about: ask what the statement shows.
-  function renderDisputes() {
-    const list = disputedInStatement({ card, userCard: mine, txns: state.txns, categories: state.categories, settings: state.settings, statementDate: dateInput.value });
-    if (!list.length) { disputes.replaceChildren(); return; }
-    fill(disputes, 
-      h('h3', {}, 'Check these on the statement'),
-      h('p', { class: 'muted small' }, 'Sources disagree on whether these earn the bonus. Your statement settles it.'),
-      h('ul', { class: 'list' }, list.map(({ txn, dispute }) => h('li', { class: 'dispute' },
-        h('p', {}, h('strong', {}, txn.merchant), ` ${money(txn.amount)} on ${formatDay(txn.date)}`),
-        h('p', { class: 'dispute-q' }, dispute.question),
-        h('div', { class: 'yes-no' },
-          h('button', { type: 'button', class: 'button secondary', onclick: () => answer(dispute, txn, 'yes') }, 'Yes'),
-          h('button', { type: 'button', class: 'button secondary', onclick: () => answer(dispute, txn, 'no') }, 'No'))))));
+  // Purchases whose bonus depends on a code we haven't confirmed, or on a rule sources disagree
+  // about: ask what the statement shows.
+  function renderQuestions() {
+    const list = statementQuestions({ card, userCard: mine, txns: engineTxns(), categories: state.categories, settings: state.settings, statementDate: dateInput.value });
+    fill(disputes,
+      list.length ? [
+        h('h3', {}, 'Check these on the statement'),
+        h('p', { class: 'muted small' }, 'We can\'t be sure these earned the bonus. Your statement settles it for next time.'),
+        h('ul', { class: 'list' }, list.map(({ txn, question, dispute }) => h('li', { class: 'dispute' },
+          h('p', {}, h('strong', {}, txn.merchant), ` ${money(txn.amount)} on ${formatDay(txn.date)}`),
+          h('p', { class: 'dispute-q' }, question),
+          h('div', { class: 'yes-no' },
+            h('button', { type: 'button', class: 'button secondary', onclick: () => answer(txn, dispute, true) }, 'Yes'),
+            h('button', { type: 'button', class: 'button secondary', onclick: () => answer(txn, dispute, false) }, 'No')))))] : null,
+      changes.length ? h('p', { class: 'hint' }, `Updated: ${changes.join('; ')}.`) : null);
   }
 
-  async function answer(dispute, txn, value) {
-    const what = dispute.recurring ? 'Recurring payments' : txn.merchant;
-    await answerDispute(dispute.id, { answer: value, cardId, ruleId: dispute.ruleId, merchant: txn.merchant, txnId: txn.id, statementDate: dateInput.value });
-    toast(value === 'yes'
-      ? `Confirmed: ${what} earn${dispute.recurring ? '' : 's'} the bonus on ${shortName(card)}.`
-      : `Noted: ${what} now count${dispute.recurring ? '' : 's'} at the base rate on ${shortName(card)}. Your next backup carries this for the card rules.`);
-    renderDisputes();
+  // Yes: this merchant earns the bonus on this card, confirmed by statement. No: base rate only.
+  async function answer(txn, dispute, yes) {
+    const name = shortName(card);
+    if (dispute) await answerDispute(dispute.id, { answer: yes ? 'yes' : 'no', cardId, ruleId: dispute.ruleId, merchant: txn.merchant, txnId: txn.id, statementDate: dateInput.value });
+    if (dispute?.recurring) changes.push(`recurring payments ${yes ? 'earn the bonus' : 'earn the base rate'} on ${name}`);
+    else {
+      await saveStatementResult(txn.merchant, cardId, yes);
+      changes.push(`${txn.merchant} ${yes ? 'earns the bonus' : 'earns the base rate'} on ${name}`);
+    }
+    renderQuestions();
     onDone?.();
   }
   const totalInput = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00', class: 'amount-input', oninput: () => update() });
@@ -87,6 +93,6 @@ export function openStatementCheck(cardId, onDone) {
     field('New spend on the statement in S$', totalInput, 'The total of this card\'s purchases on the statement, not the amount due.'),
     outcome,
     disputes));
-  renderDisputes();
+  renderQuestions();
   totalInput.focus();
 }

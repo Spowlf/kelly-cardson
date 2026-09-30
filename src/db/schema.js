@@ -46,16 +46,24 @@ export const STORES = {
  */
 
 /**
- * @typedef {object} Merchant  Merchant memory.
+ * @typedef {object} Merchant  Merchant memory (src/engine/merchants.js has the rules).
  * @property {string} id
  * @property {string} name
- * @property {string} nameLower     for autocomplete
- * @property {string|null} category
- * @property {string|null} mcc
+ * @property {string} nameLower     for lookups
+ * @property {string[]} aliases     other names search finds it by, e.g. NTUC for FairPrice
+ * @property {string|null} category categories.json id
  * @property {'in_person'|'online'|'transit'|null} channel
+ * @property {string|null} mcc      her entered code, or the reported one; null for a guess
+ * @property {string[]} altMccs     other codes sources report
+ * @property {'code entered'|'confirmed by statement'|'reported'|'guess'} status
+ * @property {string|null} source   shown as is, e.g. "Reported by MoneySmart, Jan 2026"
+ * @property {Object<string,'earned bonus'|'base rate only'>} cardResults  statement check per card id;
+ *           overrides the code rules for that card
+ * @property {number} useCount
+ * @property {number|null} lastUsed ms timestamp
+ * @property {boolean} editedByHer  pre-fill updates never change it once true
  * @property {string|null} usualMethod
  * @property {string|null} usualCardId
- * @property {'user'|'kiasumiles'} source
  * @property {number} updatedAt
  */
 
@@ -83,4 +91,5 @@ export const STORES = {
  * settings store rows: { key, value }
  *   postingDelayDays: number (default 3)
  *   lastExportAt: ms timestamp | null
+ *   merchantsPrefillVersion: number, the data/merchants.prefill.json version last merged in
  */

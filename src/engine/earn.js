@@ -3,7 +3,8 @@
 
 import { toCents, DEFAULT_BLOCK, isPooled, roundTxn, floorTo, pooledIncrement } from './rounding.js';
 import { cycleFor, addDays, formatDay } from './cycles.js';
-import { mccInList, merchantMatches, matchRule, disputeApplies } from './match.js';
+import { mccInList, merchantMatches, matchRule, disputeApplies, ruleNeedsCode } from './match.js';
+import { EARNED_BONUS, BASE_ONLY } from './merchants.js';
 
 export const DEFAULT_SETTINGS = { postingDelayDays: 3 };
 
@@ -180,7 +181,7 @@ function evaluate(card, p, state, ctx) {
   // differs only for monthly-pooled rounding (e.g. one SimplyGo fare adds 0 but is worth S$1.80 x mpd).
   const result = {
     cardId: card.id, method: p.method, miles: 0, rankMiles: 0, bonusSgd: 0, baseSgd: 0, mpd: baseMpd, baseMpd,
-    ruleId: null, bucket: null, capName: null, capSgd: null, capLeftSgd: null, reason: '', warnings: [], avoid: false, pendingBonusSgd: 0, disputes: [],
+    ruleId: null, needsCode: false, bucket: null, capName: null, capSgd: null, capLeftSgd: null, reason: '', warnings: [], avoid: false, pendingBonusSgd: 0, disputes: [],
     unconfirmed: !!(blocks.base.needs_verification || blocks.bonus.needs_verification),
     conditional: false, mccGuessed: p.mccGuessed, fcyFeeSgd: 0, costPerMileSgd: null,
   };
@@ -199,7 +200,10 @@ function evaluate(card, p, state, ctx) {
     result.reason = p.cat.no_miles_label || 'No miles, use any card';
     return { result, delta };
   }
-  if (mccInList(p.mcc, card.no_points?.mccs) || merchantMatches(p.merchant, card.no_points?.merchants)) {
+  // Her statement already showed how this merchant earns on this card: that beats the code rules.
+  const statement = p.cardResults?.[card.id] || null;
+  result.statementResult = statement;
+  if (!statement && (mccInList(p.mcc, card.no_points?.mccs) || merchantMatches(p.merchant, card.no_points?.merchants))) {
     result.reason = 'Earns nothing on this card: this kind of purchase is excluded.';
     result.unconfirmed ||= !!card.no_points.needs_verification;
     return { result, delta };
@@ -214,10 +218,11 @@ function evaluate(card, p, state, ctx) {
     if (!(rule.currencies || ['SGD', 'FCY']).includes(p.currency)) continue;
     if (!rule.methods.includes(p.method)) continue;
     if (p.date && ((rule.valid_from && p.date < rule.valid_from) || (rule.valid_until && p.date > rule.valid_until))) continue;
-    const m = matchRule(rule, p, userCard);
+    if (statement === BASE_ONLY) break;
+    const m = statement === EARNED_BONUS ? { ok: true, unconfirmed: false } : matchRule(rule, p, userCard);
     if (m.recurring) notRecurring.push(rule);
     if (!m.ok) continue;
-    const no = (rule.disputed || []).find((d) => !d.resolved && answers[d.id]?.answer === 'no' && disputeApplies(d, p));
+    const no = !statement && (rule.disputed || []).find((d) => !d.resolved && answers[d.id]?.answer === 'no' && disputeApplies(d, p));
     if (no) {
       rejected.push(answers[no.id]);
       continue;
@@ -240,6 +245,8 @@ function evaluate(card, p, state, ctx) {
       baseSgd: best.base / 100,
       mpd: best.rule.mpd,
       ruleId: best.rule.id,
+      // The exact category code decided this (a whitelist), so a guessed code may be wrong here.
+      needsCode: !statement && ruleNeedsCode(best.rule, userCard),
       bucket: best.bucketId,
       capName: best.bucketId ? capName(card, best.bucketId) : null,
       capSgd: best.bucketId ? best.capCents / 100 : null,
@@ -254,7 +261,7 @@ function evaluate(card, p, state, ctx) {
     result.unconfirmed ||= !!(best.matchUnconfirmed || best.rule.needs_verification || best.unconfirmed || best.rule.unconfirmed_methods?.includes(p.method));
     if (best.rule.promotion && best.rule.valid_until) result.warnings.push(`Promotion ends ${formatDay(best.rule.valid_until)}.`);
     for (const d of best.rule.disputed || []) {
-      if (d.resolved || answers[d.id]?.answer === 'yes' || !disputeApplies(d, p)) continue;
+      if (statement || d.resolved || answers[d.id]?.answer === 'yes' || !disputeApplies(d, p)) continue;
       result.warnings.push(d.note);
       result.unconfirmed = true;
       result.disputes.push({ id: d.id, recurring: !!d.recurring, note: d.note, question: d.question || `Did this earn the ${best.rule.mpd} mpd bonus?`, ruleId: best.rule.id });
@@ -274,6 +281,7 @@ function evaluate(card, p, state, ctx) {
     delta.pools = pools;
   }
 
+  if (statement === BASE_ONLY) result.warnings.push(`Your statement showed only the base rate here, so this counts at ${baseMpd} mpd.`);
   for (const a of rejected) {
     result.warnings.push(`Your ${a.statementDate ? `${formatDay(a.statementDate)} ` : ''}statement showed no bonus here, so this counts at ${baseMpd} mpd.`);
   }

@@ -2,7 +2,7 @@
 // and the monthly statement check.
 
 import { h, field, sheet, toast, money, miles, shortName, fill } from './dom.js';
-import { state, addBalance } from '../db/repo.js';
+import { state, addBalance, engineTxns } from '../db/repo.js';
 import { overview, pointsBalances, signupProgress, reminders, formatDay, today } from '../engine/index.js';
 import { openStatementCheck } from './statement.js';
 import { exportBackup } from './backup.js';
@@ -18,7 +18,7 @@ export function renderOverview(root, { go }) {
   }
 
   const day = today();
-  const args = { cards: state.cards, myCards: state.myCards, txns: state.txns, categories: state.categories, settings: state.settings, today: day };
+  const args = { cards: state.cards, myCards: state.myCards, txns: engineTxns(), categories: state.categories, settings: state.settings, today: day };
   const o = overview(args);
   const due = reminders({ ...args, statements: state.statements });
   const pools = pointsBalances({ ...args, balances: state.balances });

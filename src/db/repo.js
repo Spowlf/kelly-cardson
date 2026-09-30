@@ -2,7 +2,10 @@
 // Screens read `state` and change it only through these functions.
 
 import * as db from './idb.js';
-import { today } from '../engine/index.js';
+import {
+  today, withMerchant, findByName, searchMerchants as search, topMerchants as top, normalizeMerchant, mergePrefill,
+  editMerchant, recordStatementResult, merchantId, nameKey,
+} from '../engine/index.js';
 
 export const state = {
   cards: [],
@@ -12,6 +15,8 @@ export const state = {
   myCards: [],
   txns: [],
   merchants: [],
+  commonMerchants: [], // pre-filled merchant ids for the chips before she has history
+  codesByMcc: {}, // data/mcc-codes.json by code, for descriptions
   statements: [],
   balances: [],
   settings: {},
@@ -32,26 +37,44 @@ export async function load() {
   ]);
   state.myCards = sortByPriority(myCards);
   state.txns = txns;
-  state.merchants = merchants;
   state.statements = statements;
   state.balances = balances;
   state.settings = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  // Records from before merchant statuses get one, and a use count from her log.
+  const uses = {};
+  for (const t of txns) if (t.merchant && !t.isCatchUp) uses[nameKey(t.merchant)] = (uses[nameKey(t.merchant)] || 0) + 1;
+  state.merchants = merchants.map((m) => normalizeMerchant(m, uses[nameKey(m.name)] || 0));
 
-  if (!state.settings.merchantsSeeded) await seedMerchants();
+  await mergeMerchantPrefill();
+  loadCodes();
 }
 
-// First run: load merchant memory pre-filled from KiasuMiles checks (data/merchants.prefill.json).
-async function seedMerchants() {
+// Category code descriptions: only for display, so the app doesn't wait for them.
+function loadCodes() {
+  fetchJson('data/mcc-codes.json')
+    .then(({ codes }) => { state.codesByMcc = Object.fromEntries(codes.map((c) => [c.mcc, c])); })
+    .catch(() => {});
+}
+
+// Merchant memory pre-filled from data/merchants.prefill.json. When its version goes up, new
+// merchants are added and ones she hasn't touched are updated (see mergePrefill).
+async function mergeMerchantPrefill() {
   try {
-    const { merchants } = await fetchJson('data/merchants.prefill.json');
-    const now = Date.now();
-    const rows = merchants.map((m) => ({ ...m, updatedAt: now }));
+    const { _meta, merchants } = await fetchJson('data/merchants.prefill.json');
+    state.commonMerchants = _meta.common || [];
+    const version = _meta.version || 1;
+    if ((state.settings.merchantsPrefillVersion || 0) >= version) return;
+    const rows = mergePrefill(state.merchants, merchants);
     await db.putMany('merchants', rows);
-    state.merchants.push(...rows.filter((r) => !state.merchants.some((m) => m.id === r.id)));
+    for (const row of rows) {
+      const i = state.merchants.findIndex((m) => m.id === row.id);
+      if (i >= 0) state.merchants[i] = row;
+      else state.merchants.push(row);
+    }
+    await setSetting('merchantsPrefillVersion', version);
   } catch {
-    // No pre-fill available: merchant memory simply starts empty.
+    // No pre-fill available (e.g. first open offline before it was cached): try again next time.
   }
-  await setSetting('merchantsSeeded', true);
 }
 
 export async function setSetting(key, value) {
@@ -128,10 +151,12 @@ export async function saveTxn(fields) {
     note: fields.note || '',
     createdAt: existing?.createdAt || Date.now(),
   };
+  // The merchant's code isn't copied: the engine reads merchant memory, so a code she enters
+  // later applies to past purchases too. Editing a purchase doesn't count as another use.
   if (txn.merchant && !txn.isCatchUp) {
-    const m = await rememberMerchant(txn);
-    txn.merchantId = m.id;
-    txn.mcc ||= m.mcc || null;
+    const m = existing ? findMerchant(txn.merchant) : await rememberMerchant(txn);
+    txn.merchantId = m?.id || null;
+    if (m) txn.merchant = m.name;
   }
   await db.put('txns', txn);
   if (existing) Object.assign(existing, txn);
@@ -140,69 +165,96 @@ export async function saveTxn(fields) {
 }
 
 export async function deleteTxn(id) {
+  const txn = state.txns.find((t) => t.id === id);
+  const m = txn && !txn.isCatchUp && merchantOf(txn);
+  if (m?.useCount > 0) await putMerchant({ ...m, useCount: m.useCount - 1 });
   await db.remove('txns', id);
   state.txns = state.txns.filter((t) => t.id !== id);
 }
 
 // ---- Merchant memory -------------------------------------------------------
 
-const slug = (name) => name.toLowerCase().trim().replace(/\s+/g, '-');
+// By name or alias.
+export const findMerchant = (name) => findByName(state.merchants, name);
+const merchantOf = (t) => (t.merchantId && state.merchants.find((m) => m.id === t.merchantId)) || findMerchant(t.merchant);
 
-export const findMerchant = (name) => {
-  const key = name?.trim().toLowerCase();
-  return key ? state.merchants.find((m) => m.nameLower === key) : null;
-};
+// Merchants matching what she typed (names and aliases); her most-used ones when she hasn't typed.
+export const searchMerchants = (text, limit = 8) => (text.trim() ? search(state.merchants, text, limit) : top(state.merchants, limit, state.commonMerchants));
+
+// A purchase with its merchant's code, status and statement results, ready for the engine.
+export const forEngine = (purchase) => withMerchant(purchase, merchantOf(purchase));
+// Every logged purchase, ready for the engine.
+export const engineTxns = () => state.txns.map(forEngine);
 
 // Last purchase at a merchant, to fill in card and method "from last time".
 export const lastTxnAt = (name) => {
-  const key = name?.trim().toLowerCase();
+  const m = findMerchant(name);
+  const key = nameKey(m?.name || name);
   return state.txns
-    .filter((t) => t.merchant?.toLowerCase() === key && !t.isCatchUp)
+    .filter((t) => !t.isCatchUp && (m ? merchantOf(t) === m : nameKey(t.merchant) === key))
     .sort((a, b) => b.createdAt - a.createdAt)[0] || null;
 };
 
-// Merchants matching what she's typed, most recently used first.
-export function merchantSuggestions(text, limit = 6) {
-  const q = text.trim().toLowerCase();
-  const lastUsed = {};
-  for (const t of state.txns) if (t.merchant) lastUsed[t.merchant.toLowerCase()] = Math.max(lastUsed[t.merchant.toLowerCase()] || 0, t.createdAt);
-  return state.merchants
-    .filter((m) => !q || m.nameLower.includes(q))
-    .sort((a, b) => (lastUsed[b.nameLower] || 0) - (lastUsed[a.nameLower] || 0) || (a.nameLower.indexOf(q) - b.nameLower.indexOf(q)) || a.name.localeCompare(b.name))
-    .slice(0, limit);
-}
-
-// After a purchase: remember category, usual method and card for this merchant.
-async function rememberMerchant(txn) {
-  let m = findMerchant(txn.merchant);
-  if (!m) {
-    m = { id: slug(txn.merchant), name: txn.merchant, nameLower: txn.merchant.toLowerCase(), category: null, mcc: null, channel: null, usualMethod: null, usualCardId: null, source: 'user' };
-    state.merchants.push(m);
-  }
-  const cat = txn.category && state.categoriesById[txn.category];
-  Object.assign(m, {
-    category: txn.category || m.category,
-    channel: cat?.channel || m.channel,
-    usualMethod: txn.method,
-    usualCardId: txn.cardId,
-    updatedAt: Date.now(),
-  });
+async function putMerchant(m) {
   await db.put('merchants', m);
-  return m;
-}
-
-export async function saveMerchant(fields) {
-  const existing = state.merchants.find((m) => m.id === fields.id);
-  const m = { ...existing, ...fields, nameLower: fields.name.trim().toLowerCase(), name: fields.name.trim(), source: 'user', updatedAt: Date.now() };
-  await db.put('merchants', m);
-  if (existing) Object.assign(existing, m);
+  const i = state.merchants.findIndex((x) => x.id === m.id);
+  if (i >= 0) state.merchants[i] = m;
   else state.merchants.push(m);
   return m;
 }
 
+// A merchant she typed that we don't know: saved as a guess (the category's default code).
+export async function addMerchant({ name, category }) {
+  const clean = name.trim();
+  let id = merchantId(clean) || `merchant-${newId()}`;
+  if (state.merchants.some((m) => m.id === id)) id = `${id}-${newId().slice(0, 4)}`;
+  const cat = category ? state.categoriesById[category] : null;
+  return putMerchant(normalizeMerchant({
+    id, name: clean, category: category || null, channel: cat?.channel || null, mcc: null,
+    status: 'guess', source: 'Added by you', usualMethod: null, usualCardId: null, updatedAt: Date.now(),
+    ...(cat?.recurring ? { recurring: true } : {}),
+  }));
+}
+
+// After a purchase: count the use, and remember category, method and card for next time.
+async function rememberMerchant(txn) {
+  const m = findMerchant(txn.merchant) || await addMerchant({ name: txn.merchant, category: txn.category });
+  const changedCategory = !!txn.category && !!m.category && txn.category !== m.category;
+  return putMerchant({
+    ...m,
+    category: txn.category || m.category,
+    usualMethod: txn.method,
+    usualCardId: txn.cardId,
+    useCount: (m.useCount || 0) + 1,
+    lastUsed: Date.now(),
+    ...(changedCategory ? { editedByHer: true } : {}),
+    updatedAt: Date.now(),
+  });
+}
+
+// She changed Where or How for a merchant on "Which card?": use it next time.
+export async function rememberWhereHow(name, { channel, method }) {
+  const m = findMerchant(name);
+  if (!m) return;
+  const patch = {};
+  if (channel && channel !== m.channel) patch.channel = channel;
+  if (method !== undefined && method !== m.usualMethod) patch.usualMethod = method;
+  if (Object.keys(patch).length) await putMerchant({ ...m, ...patch, updatedAt: Date.now() });
+}
+
+// Her edit on the merchant screen. Marks it edited, so pre-fill updates leave it alone.
+export const saveMerchant = (m, fields) => putMerchant(editMerchant(m, fields));
+
 export async function deleteMerchant(id) {
   await db.remove('merchants', id);
   state.merchants = state.merchants.filter((m) => m.id !== id);
+}
+
+// What her statement showed for this merchant on one card.
+export async function saveStatementResult(name, cardId, earnedBonus) {
+  const m = findMerchant(name);
+  if (!m) return null;
+  return putMerchant(recordStatementResult(m, cardId, earnedBonus));
 }
 
 // ---- Statements and points balances ---------------------------------------

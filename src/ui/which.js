@@ -1,8 +1,9 @@
 // "Which card?": merchant, amount, how she's paying -> her cards ranked, with "Paid with this".
 
 import { h, chips, categorySelect, field, sheet, toast, money, miles, shortName, unconfirmedTag, METHOD_NAMES, METHOD_VERBS, CHANNELS, channelsFor, fill } from './dom.js';
-import { state, saveTxn, deleteTxn, findMerchant, merchantSuggestions } from '../db/repo.js';
+import { state, saveTxn, deleteTxn, findMerchant, forEngine, engineTxns, rememberWhereHow } from '../db/repo.js';
 import { recommend, kiasumilesPrompt, today } from '../engine/index.js';
+import { merchantChips } from './merchants.js';
 
 // Kept between visits to the tab.
 const form = { merchant: '', amount: '', category: '', channel: 'in_person', method: 'any', fcy: false };
@@ -17,12 +18,14 @@ export function renderWhich(root, { go }) {
   }
 
   const results = h('div', { class: 'results', 'aria-live': 'polite' });
-  const suggestions = h('div', { class: 'suggestions' });
 
   const merchantInput = h('input', {
     type: 'text', value: form.merchant, placeholder: 'e.g. Din Tai Fung', autocomplete: 'off', autocapitalize: 'words', enterkeyhint: 'next',
-    oninput: () => { form.merchant = merchantInput.value; applyMemory(); showSuggestions(); update(); },
-    onfocus: () => showSuggestions(),
+    oninput: () => { form.merchant = merchantInput.value; applyMemory(); picker.render(); update(); },
+  });
+  const picker = merchantChips({
+    input: merchantInput,
+    onPick: () => { form.merchant = merchantInput.value; applyMemory(); update(); amountInput.focus(); },
   });
   const amountInput = h('input', {
     type: 'text', inputmode: 'decimal', value: form.amount, placeholder: '0.00', class: 'amount-input', enterkeyhint: 'done',
@@ -49,7 +52,7 @@ export function renderWhich(root, { go }) {
     fill(channelChips, chips({
       name: 'channel', label: 'Where', value: form.channel,
       options: allowed.map((value) => ({ value, label: CHANNELS[value].label })),
-      onChange: (v) => { form.channel = v; form.method = 'any'; renderMethods(); update(); },
+      onChange: (v) => { form.channel = v; form.method = 'any'; remember(); renderMethods(); update(); },
     }));
     renderMethods();
   }
@@ -58,7 +61,7 @@ export function renderWhich(root, { go }) {
     howRow.hidden = form.channel === 'transit';
     const methods = CHANNELS[form.channel].methods;
     const options = methods.length > 1 ? [{ value: 'any', label: 'Best way' }, ...methods.map((m) => ({ value: m, label: METHOD_NAMES[m] }))] : [{ value: 'any', label: METHOD_NAMES[methods[0]] }];
-    fill(methodChips, chips({ name: 'method', label: 'How', value: form.method, options, onChange: (v) => { form.method = v; update(); } }));
+    fill(methodChips, chips({ name: 'method', label: 'How', value: form.method, options, onChange: (v) => { form.method = v; remember(); update(); } }));
   }
   function setChannel(channel) {
     if (form.channel !== channel && channelsFor(state.categoriesById[form.category]).includes(channel)) {
@@ -68,21 +71,20 @@ export function renderWhich(root, { go }) {
     renderChannels();
   }
 
-  // Merchant memory fills category and where she pays.
+  // She changed Where or How: use it for this merchant next time.
+  const remember = () => rememberWhereHow(form.merchant, { channel: form.channel, method: form.method === 'any' ? null : form.method });
+
+  // Merchant memory fills category, where she pays and how.
   function applyMemory() {
     const m = findMerchant(form.merchant);
     if (!m) return;
     if (m.category) { form.category = m.category; categoryInput.value = m.category; }
     if (m.channel) setChannel(m.channel);
     else renderChannels();
-  }
-
-  function showSuggestions() {
-    const list = form.merchant.trim() ? merchantSuggestions(form.merchant, 5).filter((m) => m.nameLower !== form.merchant.trim().toLowerCase()) : [];
-    fill(suggestions, ...list.map((m) => h('button', {
-      type: 'button', class: 'suggestion',
-      onclick: () => { form.merchant = m.name; merchantInput.value = m.name; applyMemory(); suggestions.replaceChildren(); update(); amountInput.focus(); },
-    }, m.name)));
+    if (m.usualMethod && CHANNELS[form.channel].methods.length > 1 && CHANNELS[form.channel].methods.includes(m.usualMethod)) {
+      form.method = m.usualMethod;
+      renderMethods();
+    }
   }
 
   function update() {
@@ -91,18 +93,20 @@ export function renderWhich(root, { go }) {
       fill(results, h('p', { class: 'muted pad' }, 'Enter the amount to see which card earns the most.'));
       return;
     }
+    const m = findMerchant(form.merchant);
     const purchase = {
       amount, date: today(), fcy: form.fcy, channel: form.channel,
       method: form.method === 'any' ? (CHANNELS[form.channel].methods.length === 1 ? CHANNELS[form.channel].methods[0] : undefined) : form.method,
-      category: form.category || null, merchant: form.merchant.trim() || null, mcc: findMerchant(form.merchant)?.mcc || null,
+      category: form.category || null, merchant: m?.name || form.merchant.trim() || null,
     };
-    const out = recommend({ purchase, cards: state.cards, myCards: state.myCards, categories: state.categories, settings: state.settings, txns: state.txns });
+    const txns = engineTxns();
+    const out = recommend({ purchase: forEngine(purchase), cards: state.cards, myCards: state.myCards, categories: state.categories, settings: state.settings, txns });
     if (out.noMiles) {
       fill(results, h('section', { class: 'answer answer-quiet' }, h('p', { class: 'answer-card' }, out.message)));
       return;
     }
     const [top, ...rest] = out.results;
-    const prompt = kiasumilesPrompt({ purchase, cards: state.cards, myCards: state.myCards, txns: state.txns, categories: state.categories, settings: state.settings, today: today() });
+    const prompt = kiasumilesPrompt({ purchase, cards: state.cards, myCards: state.myCards, txns, categories: state.categories, settings: state.settings, today: today() });
     fill(results, 
       answer(top, purchase, true),
       rest.length ? h('h2', { class: 'subhead' }, 'Other cards') : null,
@@ -170,7 +174,7 @@ export function renderWhich(root, { go }) {
   fill(root, 
     h('form', { class: 'which-form', onsubmit: (e) => e.preventDefault() },
       field('Merchant', merchantInput),
-      suggestions,
+      picker.el,
       h('div', { class: 'row-2' },
         field('Amount in S$', amountInput),
         field('Category', categoryInput)),

@@ -215,6 +215,9 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .chip:hover { border-color: var(--ink-2); }
 .chip:active { transform: scale(0.95); }
 .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chip-add { border-style: dashed; color: var(--accent); }
+.link-button { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.link-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 .suggestions { display: flex; flex-wrap: wrap; gap: var(--s2); }
 .suggestions:not(:empty) { margin-top: var(--s2); }
