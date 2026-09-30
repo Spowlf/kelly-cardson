@@ -1,0 +1,86 @@
+{
+  "purchase_id": "p02",
+  "merchant": "Hawker centre café",
+  "amount_sgd": 6.5,
+  "queried_on": "2026-09-30",
+  "data_version": "2026-09-23",
+  "tool": "kiasumiles_compare_payment_methods",
+  "methods": {
+    "mobile_contactless": {
+      "merchant_matched": false,
+      "message": null,
+      "routing_note": "No merchant data - routed by category inference. Verify before relying on this.",
+      "best_guaranteed": {
+        "card_id": "boc_elite",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 8.4,
+        "cap_summary": "No cap",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "BOC Elite Miles earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": "2026-08-29"
+      },
+      "best_if_conditions_met": {
+        "card_id": "hsbc_revolution",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 24,
+        "cap_summary": "S$1,000 cap / calendar month",
+        "condition_summary": "S$1,000 cap / calendar month",
+        "rate_status": "conditional",
+        "reason_summary": "HSBC Revolution earns 4 mpd because merchant category is eligible and mobile contactless payment qualifies.",
+        "last_verified": "2026-07-07"
+      }
+    },
+    "contactless": {
+      "merchant_matched": false,
+      "message": null,
+      "routing_note": "No merchant data - routed by category inference. Verify before relying on this.",
+      "best_guaranteed": {
+        "card_id": "boc_elite",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 8.4,
+        "cap_summary": "No cap",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "BOC Elite Miles earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": "2026-08-29"
+      },
+      "best_if_conditions_met": {
+        "card_id": "hsbc_revolution",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 24,
+        "cap_summary": "S$1,000 cap / calendar month",
+        "condition_summary": "S$1,000 cap / calendar month",
+        "rate_status": "conditional",
+        "reason_summary": "HSBC Revolution earns 4 mpd because merchant category is eligible and mobile contactless payment qualifies.",
+        "last_verified": "2026-07-07"
+      }
+    },
+    "online": {
+      "merchant_matched": false,
+      "message": null,
+      "routing_note": "No merchant data - routed by category inference. Verify before relying on this.",
+      "best_guaranteed": {
+        "card_id": "boc_elite",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 8.4,
+        "cap_summary": "No cap",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "BOC Elite Miles earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": "2026-08-29"
+      },
+      "best_if_conditions_met": {
+        "card_id": "citi_rewards_mc",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 24,
+        "cap_summary": "S$1,000 cap / statement month",
+        "condition_summary": "S$1,000 cap / statement month",
+        "rate_status": "conditional",
+        "reason_summary": "Citi Rewards Mastercard earns 4 mpd because merchant category is eligible and online payment qualifies.",
+        "last_verified": "2026-06-10"
+      }
+    }
+  },
+  "profile": "all"
+}

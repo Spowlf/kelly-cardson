@@ -1,0 +1,50 @@
+{
+  "purchase_id": "p04",
+  "merchant": "foodpanda",
+  "amount_sgd": 28,
+  "queried_on": "2026-09-30",
+  "data_version": "2026-09-23",
+  "tool": "kiasumiles_compare_payment_methods",
+  "methods": {
+    "mobile_contactless": {
+      "merchant_matched": false,
+      "message": "Multiple merchant categories remain possible. Confirm the outlet and payment method before recommending a card.",
+      "routing_note": null,
+      "best_guaranteed": null,
+      "best_if_conditions_met": null
+    },
+    "contactless": {
+      "merchant_matched": false,
+      "message": "Multiple merchant categories remain possible. Confirm the outlet and payment method before recommending a card.",
+      "routing_note": null,
+      "best_guaranteed": null,
+      "best_if_conditions_met": null
+    },
+    "online": {
+      "merchant_matched": true,
+      "message": null,
+      "routing_note": null,
+      "best_guaranteed": {
+        "card_id": "boc_elite",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 39.2,
+        "cap_summary": "No cap",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "BOC Elite Miles earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": "2026-08-29"
+      },
+      "best_if_conditions_met": {
+        "card_id": "dbs_wwmc",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 110,
+        "cap_summary": "S$1,000 online cap / calendar month · base points rounded per transaction; online bonus rounded monthly",
+        "condition_summary": "S$1,000 online cap / calendar month · base points rounded per transaction; online bonus rounded monthly",
+        "rate_status": "conditional",
+        "reason_summary": "DBS Woman's World Card earns 4 mpd because card has no merchant-category restriction and online payment qualifies.",
+        "last_verified": "2026-08-29"
+      }
+    }
+  },
+  "profile": "all"
+}

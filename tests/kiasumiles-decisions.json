@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "description": "Disagreements with KiasuMiles that have been reviewed. The compare script lists these under 'Decided' instead of as open disagreements. purchase '*' = any purchase; rates [ours, kiasumiles] limits a decision to that exact rate pair."
+  },
+  "decisions": [
+    {
+      "purchase": "p05",
+      "card": "citi_rewards",
+      "decided": "2026-09-30",
+      "decision": "Keep 4 mpd. SingSaver (Feb 2026) and Mainly Miles (Aug 2026) support it; KiasuMiles appears to lack Grab data. Marked disputed in cards.json: confirm on her first statement."
+    },
+    {
+      "purchase": "p04",
+      "card": "dbs_wwmc",
+      "decided": "2026-09-30",
+      "decision": "Skipped for now: she isn't eligible at her income."
+    },
+    {
+      "purchase": "p02",
+      "card": "hsbc_revolution",
+      "decided": "2026-09-30",
+      "decision": "Keep our guessed hawker code (5814); merchant memory will correct it."
+    },
+    {
+      "purchase": "*",
+      "card": "hsbc_revolution",
+      "rates": [
+        3.33,
+        4
+      ],
+      "decided": "2026-09-30",
+      "decision": "Keep the KrisFlyer basis (3.33 mpd); KiasuMiles shows the 4 mpd non-KrisFlyer rate."
+    },
+    {
+      "purchase": "p03",
+      "card": "citi_rewards",
+      "decided": "2026-09-30",
+      "decision": "Keep 4 mpd: Citi's online bonus is all online except travel/listed exclusions and in-app wallets. KiasuMiles appears to model it as a category whitelist. Marked disputed: confirm on her first statement."
+    },
+    {
+      "purchase": "p11",
+      "card": "citi_rewards",
+      "decided": "2026-09-30",
+      "decision": "Keep 4 mpd (same reason as foodpanda). Marked disputed: confirm on her first statement."
+    }
+  ]
+}

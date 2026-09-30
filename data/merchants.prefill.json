@@ -1,0 +1,151 @@
+{
+  "_meta": {
+    "description": "Merchant memory seeded into the app on first run. She can edit any of it.",
+    "source": "KiasuMiles compare_payment_methods, 2026-09-30 (data version 2026-09-23). KiasuMiles does not return categories or category codes, so category is ours; mcc stays empty until known.",
+    "last_updated": "2026-09-30"
+  },
+  "merchants": [
+    {
+      "id": "din-tai-fung",
+      "name": "Din Tai Fung",
+      "nameLower": "din tai fung",
+      "category": "dining",
+      "mcc": null,
+      "channel": "in_person",
+      "usualMethod": "mobile_tap",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": true,
+        "best_method": "mobile_contactless",
+        "note": "All three methods tie at 4 mpd; phone tap chosen for an in-store restaurant."
+      }
+    },
+    {
+      "id": "foodpanda",
+      "name": "foodpanda",
+      "nameLower": "foodpanda",
+      "category": "food_delivery",
+      "mcc": null,
+      "channel": "online",
+      "usualMethod": "online_card_entry",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": true,
+        "best_method": "online",
+        "note": "KiasuMiles only resolves 'online' and can't tell card entry from in-app Apple Pay; card entry chosen because Citi Rewards excludes in-app wallets."
+      }
+    },
+    {
+      "id": "grab",
+      "name": "Grab",
+      "nameLower": "grab",
+      "category": "rides",
+      "mcc": null,
+      "channel": "online",
+      "usualMethod": "online_card_entry",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": true,
+        "best_method": "online",
+        "note": "KiasuMiles finds no bonus card for Grab rides (best 1.4 mpd). See disagreement p05."
+      }
+    },
+    {
+      "id": "shopee",
+      "name": "Shopee",
+      "nameLower": "shopee",
+      "category": "online_shopping",
+      "mcc": null,
+      "channel": "online",
+      "usualMethod": "online_card_entry",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": "in-store methods only",
+        "best_method": null,
+        "note": "KiasuMiles could not resolve Shopee online (several possible categories). Method is ours."
+      }
+    },
+    {
+      "id": "uniqlo",
+      "name": "Uniqlo",
+      "nameLower": "uniqlo",
+      "category": "fashion",
+      "mcc": null,
+      "channel": "in_person",
+      "usualMethod": "mobile_tap",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": true,
+        "best_method": "mobile_contactless",
+        "note": "All three methods tie at 4 mpd."
+      }
+    },
+    {
+      "id": "golden-village",
+      "name": "Golden Village",
+      "nameLower": "golden village",
+      "category": "cinema",
+      "mcc": null,
+      "channel": "online",
+      "usualMethod": "online_card_entry",
+      "usualCardId": null,
+      "source": "kiasumiles",
+      "kiasumiles": {
+        "matched": true,
+        "name": "Golden Village (Gv)",
+        "best_method": "online",
+        "note": "All three methods tie at 4 mpd; online chosen because tickets are usually bought online."
+      }
+    },
+    {
+      "id": "fairprice",
+      "name": "FairPrice",
+      "nameLower": "fairprice",
+      "category": "groceries",
+      "mcc": null,
+      "channel": "in_person",
+      "usualMethod": "mobile_tap",
+      "usualCardId": null,
+      "source": "default",
+      "kiasumiles": {
+        "matched": false,
+        "note": "KiasuMiles: multiple categories possible; needs the outlet."
+      }
+    },
+    {
+      "id": "starbucks",
+      "name": "Starbucks",
+      "nameLower": "starbucks",
+      "category": "cafe",
+      "mcc": null,
+      "channel": "in_person",
+      "usualMethod": "mobile_tap",
+      "usualCardId": null,
+      "source": "default",
+      "kiasumiles": {
+        "matched": false,
+        "note": "KiasuMiles: multiple categories possible; needs the outlet."
+      }
+    },
+    {
+      "id": "mrt-/-bus-(simplygo)",
+      "name": "MRT / bus (SimplyGo)",
+      "nameLower": "mrt / bus (simplygo)",
+      "category": "public_transport",
+      "mcc": null,
+      "channel": "transit",
+      "usualMethod": "simplygo",
+      "usualCardId": null,
+      "source": "default",
+      "kiasumiles": {
+        "matched": false,
+        "note": "KiasuMiles has no SimplyGo data."
+      }
+    }
+  ]
+}

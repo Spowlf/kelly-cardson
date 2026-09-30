@@ -1,0 +1,178 @@
+{
+  "_meta": {
+    "description": "Test purchases for comparing our recommender with KiasuMiles. Add more here; save KiasuMiles answers per profile in tests/expected/<profile>/<id>.json.",
+    "simplygo": "SimplyGo purchases are never compared with KiasuMiles: our engine is the authority for MRT/bus.",
+    "profiles": {
+      "all": {
+        "description": "Every card in data/cards.json (tests the data broadly).",
+        "cards": [
+          "uob_preferred_visa",
+          "citi_rewards",
+          "maybank_xl_rewards",
+          "uob_ladys",
+          "ocbc_rewards",
+          "uob_visa_signature",
+          "hsbc_revolution",
+          "dbs_wwmc",
+          "sc_journey",
+          "krisflyer_uob",
+          "citi_premiermiles",
+          "dbs_altitude",
+          "uob_prvi_miles",
+          "ocbc_90n",
+          "hsbc_travelone",
+          "maybank_horizon_vs",
+          "boc_elite_miles",
+          "amex_krisflyer"
+        ]
+      },
+      "planned": {
+        "description": "Her planned cards.",
+        "cards": [
+          "uob_preferred_visa",
+          "citi_rewards"
+        ]
+      }
+    }
+  },
+  "purchases": [
+    {
+      "id": "p01",
+      "merchant": "Din Tai Fung",
+      "amount": 45,
+      "method": "mobile_tap",
+      "fcy": false,
+      "category": "dining",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Din Tai Fung"
+      }
+    },
+    {
+      "id": "p02",
+      "merchant": "Hawker centre café",
+      "amount": 6.5,
+      "method": "mobile_tap",
+      "fcy": false,
+      "category": "hawker",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Hawker centre cafe",
+        "category": "dining"
+      }
+    },
+    {
+      "id": "p03",
+      "merchant": "foodpanda",
+      "amount": 28,
+      "method": "online_card_entry",
+      "fcy": false,
+      "category": "food_delivery",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "foodpanda"
+      }
+    },
+    {
+      "id": "p04",
+      "merchant": "foodpanda",
+      "amount": 28,
+      "method": "in_app_wallet",
+      "fcy": false,
+      "category": "food_delivery",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "foodpanda"
+      },
+      "note": "KiasuMiles has no separate in-app Apple Pay method; compared against its 'online' result."
+    },
+    {
+      "id": "p05",
+      "merchant": "Grab",
+      "amount": 18,
+      "method": "online_card_entry",
+      "fcy": false,
+      "category": "rides",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Grab",
+        "category": "transport"
+      }
+    },
+    {
+      "id": "p06",
+      "merchant": "Shopee",
+      "amount": 60,
+      "method": "online_card_entry",
+      "fcy": false,
+      "category": "online_shopping",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Shopee"
+      }
+    },
+    {
+      "id": "p07",
+      "merchant": "Uniqlo",
+      "amount": 60,
+      "method": "mobile_tap",
+      "fcy": false,
+      "category": "fashion",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Uniqlo"
+      }
+    },
+    {
+      "id": "p08",
+      "merchant": "FairPrice",
+      "amount": 80,
+      "method": "mobile_tap",
+      "fcy": false,
+      "category": "groceries",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "FairPrice",
+        "category": "grocery"
+      }
+    },
+    {
+      "id": "p09",
+      "merchant": "MRT fare",
+      "amount": 1.8,
+      "method": "simplygo",
+      "fcy": false,
+      "category": "public_transport",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "SimplyGo MRT"
+      },
+      "note": "SimplyGo: our engine is the authority; not compared with KiasuMiles."
+    },
+    {
+      "id": "p10",
+      "merchant": "Starbucks",
+      "amount": 8.5,
+      "method": "mobile_tap",
+      "fcy": false,
+      "category": "cafe",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Starbucks",
+        "category": "dining"
+      }
+    },
+    {
+      "id": "p11",
+      "merchant": "Golden Village",
+      "amount": 30,
+      "method": "online_card_entry",
+      "fcy": false,
+      "category": "cinema",
+      "date": "2026-09-10",
+      "kiasumiles_query": {
+        "merchant": "Golden Village (Gv)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "purchase_id": "p11",
+  "merchant": "Golden Village",
+  "amount_sgd": 30,
+  "queried_on": "2026-09-30",
+  "data_version": "2026-09-23",
+  "tool": "kiasumiles_compare_payment_methods",
+  "merchant_name_used": "Golden Village (Gv)",
+  "methods": {
+    "mobile_contactless": {
+      "merchant_matched": true,
+      "message": null,
+      "routing_note": null,
+      "best_guaranteed": {
+        "card_id": "uob_prvi_miles_visa",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 42,
+        "cap_summary": "No cap · earns in S$5 blocks",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "UOB PRVI Miles Visa earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": null
+      },
+      "best_if_conditions_met": {
+        "card_id": "maybank_xl",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 120,
+        "cap_summary": "S$1,000 cap / calendar month · earns in S$5 blocks",
+        "condition_summary": "S$500 minimum spend · S$1,000 cap / calendar month · earns in S$5 blocks",
+        "rate_status": "conditional",
+        "reason_summary": "Maybank XL Card earns 4 mpd because merchant category is eligible and S$1,000 cap / calendar month · earns in S$5 blocks.",
+        "last_verified": "2026-08-04"
+      }
+    },
+    "contactless": {
+      "merchant_matched": true,
+      "message": null,
+      "routing_note": null,
+      "best_guaranteed": {
+        "card_id": "uob_prvi_miles_visa",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 42,
+        "cap_summary": "No cap · earns in S$5 blocks",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "UOB PRVI Miles Visa earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": null
+      },
+      "best_if_conditions_met": {
+        "card_id": "maybank_xl",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 120,
+        "cap_summary": "S$1,000 cap / calendar month · earns in S$5 blocks",
+        "condition_summary": "S$500 minimum spend · S$1,000 cap / calendar month · earns in S$5 blocks",
+        "rate_status": "conditional",
+        "reason_summary": "Maybank XL Card earns 4 mpd because merchant category is eligible and S$1,000 cap / calendar month · earns in S$5 blocks.",
+        "last_verified": "2026-08-04"
+      }
+    },
+    "online": {
+      "merchant_matched": true,
+      "message": null,
+      "routing_note": null,
+      "best_guaranteed": {
+        "card_id": "uob_prvi_miles_visa",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 42,
+        "cap_summary": "No cap · earns in S$5 blocks",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "UOB PRVI Miles Visa earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": null
+      },
+      "best_if_conditions_met": {
+        "card_id": "maybank_xl",
+        "earn_rate_mpd": 4.0,
+        "estimated_miles": 120,
+        "cap_summary": "S$1,000 cap / calendar month · earns in S$5 blocks",
+        "condition_summary": "S$500 minimum spend · S$1,000 cap / calendar month · earns in S$5 blocks",
+        "rate_status": "conditional",
+        "reason_summary": "Maybank XL Card earns 4 mpd because merchant category is eligible and S$1,000 cap / calendar month · earns in S$5 blocks.",
+        "last_verified": "2026-08-04"
+      }
+    }
+  },
+  "profile": "all"
+}

@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "description": "Spending categories for merchant memory and the recommender. Each has a default category code (MCC) used when the real code for a merchant is unknown.",
+    "warnings": [
+      "Every default_mcc here is a GUESS. The same kind of shop can use different codes. Replace with the merchant's real code in merchant memory when known."
+    ],
+    "channels": {
+      "in_person": "Paid at a till: compare mobile_tap, physical_tap, chip_or_swipe",
+      "online": "Paid on a website or app: compare online_card_entry, in_app_wallet",
+      "transit": "MRT/bus gantry: simplygo"
+    },
+    "last_verified": "2026-09-30"
+  },
+  "categories": [
+    { "id": "dining", "label": "Restaurants", "channel": "in_person", "default_mcc": "5812", "mcc_is_guess": true },
+    { "id": "hawker", "label": "Hawker / coffee shop", "channel": "in_person", "default_mcc": "5814", "mcc_is_guess": true, "notes": "Many stalls take NETS or PayNow only; card-accepting stalls vary between 5812, 5814 and 5499." },
+    { "id": "cafe", "label": "Cafés / bubble tea", "channel": "in_person", "default_mcc": "5814", "mcc_is_guess": true, "notes": "Some cafés code as 5812." },
+    { "id": "fast_food", "label": "Fast food", "channel": "in_person", "default_mcc": "5814", "mcc_is_guess": true },
+    { "id": "bakery", "label": "Bakery / desserts", "channel": "in_person", "default_mcc": "5462", "mcc_is_guess": true },
+    { "id": "bars", "label": "Bars / nightlife", "channel": "in_person", "default_mcc": "5813", "mcc_is_guess": true },
+    { "id": "food_delivery", "label": "Food delivery", "channel": "online", "default_mcc": "5814", "mcc_is_guess": true, "notes": "foodpanda and Deliveroo often 5814; GrabFood may code as 4121 or 5499." },
+    { "id": "groceries", "label": "Groceries / supermarket", "channel": "in_person", "default_mcc": "5411", "mcc_is_guess": true },
+    { "id": "online_groceries", "label": "Online groceries", "channel": "online", "default_mcc": "5411", "mcc_is_guess": true },
+    { "id": "convenience", "label": "Convenience store", "channel": "in_person", "default_mcc": "5499", "mcc_is_guess": true },
+    { "id": "rides", "label": "Taxi / ride-hailing", "channel": "online", "default_mcc": "4121", "mcc_is_guess": true },
+    { "id": "public_transport", "label": "MRT / bus", "channel": "transit", "default_mcc": "4111", "mcc_is_guess": true },
+    { "id": "petrol", "label": "Petrol", "channel": "in_person", "default_mcc": "5541", "mcc_is_guess": true },
+    { "id": "fashion", "label": "Clothing / shoes / bags", "channel": "in_person", "default_mcc": "5651", "mcc_is_guess": true },
+    { "id": "department_store", "label": "Department store", "channel": "in_person", "default_mcc": "5311", "mcc_is_guess": true },
+    { "id": "online_shopping", "label": "Online shopping (marketplaces)", "channel": "online", "default_mcc": "5399", "mcc_is_guess": true, "notes": "Shopee, Lazada and Amazon codes differ (5262, 5399, 5964 seen)." },
+    { "id": "electronics", "label": "Electronics", "channel": "in_person", "default_mcc": "5732", "mcc_is_guess": true },
+    { "id": "pharmacy", "label": "Pharmacy / health & beauty store", "channel": "in_person", "default_mcc": "5912", "mcc_is_guess": true },
+    { "id": "beauty", "label": "Salon / spa / wellness", "channel": "in_person", "default_mcc": "7230", "mcc_is_guess": true },
+    { "id": "books_hobbies", "label": "Books / hobbies / toys", "channel": "in_person", "default_mcc": "5942", "mcc_is_guess": true },
+    { "id": "cinema", "label": "Cinema", "channel": "online", "default_mcc": "7832", "mcc_is_guess": true },
+    { "id": "entertainment", "label": "Attractions / events", "channel": "online", "default_mcc": "7999", "mcc_is_guess": true },
+    { "id": "airlines", "label": "Flights", "channel": "online", "default_mcc": "4511", "mcc_is_guess": true },
+    { "id": "hotels", "label": "Hotels", "channel": "online", "default_mcc": "7011", "mcc_is_guess": true },
+    { "id": "travel_agency", "label": "Travel booking sites", "channel": "online", "default_mcc": "4722", "mcc_is_guess": true },
+    { "id": "bills_utilities", "label": "Bills / utilities", "channel": "online", "default_mcc": "4900", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
+    { "id": "insurance", "label": "Insurance", "channel": "online", "default_mcc": "6300", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
+    { "id": "education", "label": "Education", "channel": "online", "default_mcc": "8299", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
+    { "id": "government", "label": "Government / tax / fines / parking", "channel": "online", "default_mcc": "9399", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
+    { "id": "ewallet_topup", "label": "E-wallet top-up", "channel": "online", "default_mcc": "6540", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card" },
+    { "id": "subscriptions", "label": "Recurring subscriptions", "channel": "online", "default_mcc": "5968", "mcc_is_guess": true, "no_miles": true, "no_miles_label": "No miles, use any card", "notes": "Treated as no miles per your instruction. Some cards do earn on some subscriptions (e.g. Maybank XL 4899 streaming); the recommender still skips them." }
+  ]
+}

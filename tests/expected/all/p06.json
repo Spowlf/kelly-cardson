@@ -1,0 +1,43 @@
+{
+  "purchase_id": "p06",
+  "merchant": "Shopee",
+  "amount_sgd": 60,
+  "queried_on": "2026-09-30",
+  "data_version": "2026-09-23",
+  "tool": "kiasumiles_compare_payment_methods + kiasumiles_lookup (channel online, category shopping)",
+  "methods": {
+    "mobile_contactless": {
+      "merchant_matched": true,
+      "message": null,
+      "routing_note": null,
+      "best_guaranteed": {
+        "card_id": "uob_prvi_miles_visa",
+        "earn_rate_mpd": 1.4,
+        "estimated_miles": 84,
+        "cap_summary": "No cap · earns in S$5 blocks",
+        "condition_summary": null,
+        "rate_status": "guaranteed",
+        "reason_summary": "UOB PRVI Miles Visa earns 1.4 mpd because card has no merchant-category restriction.",
+        "last_verified": null
+      },
+      "best_if_conditions_met": {
+        "card_id": "ocbc_rewards",
+        "earn_rate_mpd": 6.0,
+        "estimated_miles": 360,
+        "cap_summary": "4,000 ordinary bonus miles / calendar month; earns in S$5 blocks; separate 2,000 promotional bonus miles / calendar month through 31 March 2027",
+        "condition_summary": "4,000 ordinary bonus miles / calendar month; earns in S$5 blocks",
+        "rate_status": "conditional",
+        "reason_summary": "OCBC Rewards Card earns 6 mpd because merchant is in this card's eligible merchant list (includes promotional +2 mpd for Watsons, Lazada, Shopee, Taobao, TikTok Shop postings 1 Jul 2026 to 31 Mar 2027).",
+        "last_verified": "2026-06-10"
+      }
+    },
+    "online": {
+      "merchant_matched": false,
+      "message": "Multiple merchant categories remain possible. Confirm the outlet and payment method before recommending a card.",
+      "routing_note": null,
+      "best_guaranteed": null,
+      "best_if_conditions_met": null
+    }
+  },
+  "profile": "all"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "miles-card-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "compare:kiasumiles": "node scripts/compare-kiasumiles.mjs"
+  }
+}

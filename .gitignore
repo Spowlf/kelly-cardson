@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+*.log
+# Her backups never go in the repo: they hold her purchases.
+miles-backup-*.json
