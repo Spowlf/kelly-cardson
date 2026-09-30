@@ -58,16 +58,19 @@ function minSpend(card) {
   return `${sgd(m.sgd)} ${period(card)}${failure}`;
 }
 
-// Source URLs as linked names: "Mainly Miles review", "MileLion".
+// Source URLs as linked names: "Mainly Miles review", "MileLion". A ';'-separated part with
+// no URL (e.g. "UOB Preferred Visa terms, version 3.0, 10 Mar 2026") is shown as written.
 const SITES = { 'mainlymiles.com': 'Mainly Miles', 'milelion.com': 'MileLion' };
 function sources(source) {
+  const parts = source.split(';').map((s) => s.trim()).filter(Boolean);
+  const named = parts.filter((s) => !/https?:\/\//.test(s));
   const urls = source.match(/https?:\/\/[^\s;,)]+/g) || [];
-  const links = urls.map((url) => {
+  const links = [...named, ...urls.map((url) => {
     const host = new URL(url).hostname.replace(/^www\./, '');
     const kind = /review/.test(url) ? ' review' : /\/credit-cards\/?$/.test(url) ? ' card comparison' : '';
     const name = `${SITES[host] || host}${kind}`;
     return h('a', { href: url, target: '_blank', rel: 'noopener' }, name);
-  });
+  })];
   return [links.length > 1 ? 'Sources: ' : 'Source: ', ...links.flatMap((a, i) => (i ? [i === links.length - 1 ? ' and ' : ', ', a] : [a]))];
 }
 

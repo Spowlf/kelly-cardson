@@ -78,12 +78,12 @@
       "fcy_fee_pct": 3.25,
       "earn_block": { "type": "per_txn_floor", "size_sgd": 5 },
       "earn_block_overrides": [
-        { "methods": ["simplygo"], "type": "monthly_pooled_floor", "size_sgd": 5, "notes": "SimplyGo fares aggregated per calendar month, then floored to $5" }
+        { "methods": ["simplygo"], "type": "monthly_pooled_floor", "size_sgd": 5, "notes": "SimplyGo fares are added up for the calendar month, then rounded down to S$5." }
       ],
       "cap_period": "calendar_month",
       "cap_basis": "posting_date",
       "caps": {
-        "tap": { "sgd": 600, "label": "phone tap" },
+        "tap": { "sgd": 600, "label": "phone tap / SimplyGo" },
         "online": { "sgd": 600 }
       },
       "min_spend": null,
@@ -96,7 +96,7 @@
           "currencies": ["SGD", "FCY"],
           "match": { "mode": "blacklist", "mccs": [] },
           "cap_bucket": "tap",
-          "notes": "Tapping the physical card earns 0.4 mpd. Almost any shop counts, except those that earn nothing on this card."
+          "notes": "Apple Pay, Google Pay or Samsung Pay tapped in a shop. Tapping the physical card in a shop earns 0.4 mpd, and Apple Pay inside an app is not a phone tap. SimplyGo counts from 28 Aug 2025, whether you tap your phone or the card at the gantry."
         },
         {
           "id": "selected_online",
@@ -104,23 +104,27 @@
           "mpd": 4.0,
           "methods": ["online_card_entry", "in_app_wallet"],
           "currencies": ["SGD", "FCY"],
-          "match": { "mode": "whitelist", "exclude_recurring": true, "mccs": ["5311", "4816", "5262", "5306", "5309", "5310", "5331", "5399", "5611", "5621", "5631", "5641", "5651", "5661", "5691", "5699", "5732", "5733", "5734", "5735", "5912", "5942", "5944", "5945", "5946", "5947", "5948", "5949", "5964", "5966", "5967", "5968", "5969", "5970", "5992", "5999", "5333", "5411", "9751", "5441", "5462", "5499", "5811", "5812", "5814", "7278", "7832", "7841", "7922", "7991", "7996", "7998", "7999"] },
+          "match": { "mode": "whitelist", "exclude_recurring": true, "mccs": ["4816", "5262", "5306", "5309", "5310", "5311", "5331", "5399", "5611", "5621", "5631", "5641", "5651", "5661", "5691", "5699", "5732-5735", "5912", "5942", "5944-5949", "5964", "5966-5970", "5992", "5999", "5811", "5812", "5814", "5333", "5411", "5441", "5462", "5499", "8012", "9751", "7278", "7832", "7841", "7922", "7991", "7996", "7998-7999"] },
           "cap_bucket": "online",
-          "notes": "Selected online shops only. Subscriptions and other recurring payments earn 0.4 mpd. Apple Pay or Google Pay inside an app counts as online, not phone tap.",
-          "dev_notes": "Source table also lists 8012; verify before adding."
+          "notes": "Selected online shops only. Subscriptions and other recurring payments earn 0.4 mpd. UOB says Apple Pay inside an app isn't a phone tap, but doesn't say it counts as online, so that is unconfirmed.",
+          "unconfirmed_methods": ["in_app_wallet"],
+          "dev_notes": "Official list, UOB T&Cs Ver 3.0 (10 Mar 2026). 5965 removed from 1 Oct 2024. in_app_wallet kept as a method but unconfirmed: the T&Cs exclude in-app Apple Pay from mobile contactless without saying it counts as online."
         }
       ],
       "no_points": {
-        "mccs": ["4900", "5960", "6300", "6010", "6011", "6012", "6050", "6051", "6211", "6513", "6540", "7523", "7995", "8062", "8211-8299", "8398", "8651", "8661", "9000-9999"],
-        "merchants": ["SPC", "Shell", "AXS", "EZ-Link", "FlashPay", "Amaze", "NETS"],
-        "notes": ["petrol at SPC/Shell", "AXS", "EZ-Link/FlashPay top-ups", "e-wallet/prepaid top-ups", "utilities", "insurance", "brokerage/crypto/quasi-cash", "rent via agents", "hospitals", "education", "government/tax/fines", "charities/religious/political", "parking", "gambling", "Amaze transactions", "NETS", "instalment plans"],
-        "needs_verification": true
+        "mccs": ["4829", "4900", "5199", "5960", "5965", "5993", "6012", "6050", "6051", "6211", "6300", "6513", "6529", "6530", "6534", "6540", "7349", "7511", "7523", "7995", "8062", "8211", "8220", "8241", "8244", "8249", "8299", "8398", "8651", "8661", "8699", "8999", "9211", "9222", "9223", "9311", "9399", "9402", "9405"],
+        "merchants": ["SPC", "Shell", "AXS", "SingPost SAM", "EZ-Link", "EZLink", "FlashPay", "NETS", "Amaze", "iPaymy", "SmoovePay", "RazerPay"],
+        "excluded_descriptors": ["AXS*", "AMAZE*", "AMAZE* TRANSIT*", "BANC DE BINARY*", "BANCDEBINARY.COM*", "EZ LINK PTE LTD (FEVO)", "EZ Link transport", "EZ Link*", "EZ-LINK (IMAGINE CARD)", "EZ-Link EZ-Reload (ATU)", "EZLINK*", "EzLink*", "EZ-LINK*", "FlashPay ATU*", "MB * MONEYBOOKERS.COM", "NETS VCASHCARD*", "OANDA ASIA PAC*", "OANDAASIAPA", "PAYPAL * BIZCONSULTA", "PAYPAL * CAPITALROYA", "PAYPAL * OANDAASIAPA", "Saxo Cap Mkts Pte Ltd", "SKR*SKRILL.COM", "SKR*xglobalmarkets.com*", "SKYFX.COM*", "TRANSIT*", "WWW.IGMARKETS.COM.SG", "IPAYMY*", "RWS-LEVY*", "SMOOVE PAY*", "SINGPOST-SAM*", "RazerPay*", "NORWDS*"],
+        "notes": ["SPC and Shell petrol stations", "NETS transactions", "bill payments, top-ups and payments to payment service providers or prepaid accounts", "0% instalment plans, SmartPay, cash advances, balance transfers, fees and interest", "transactions later cancelled or reversed"],
+        "needs_verification": false,
+        "source": "UOB Preferred Visa T&Cs, Ver 3.0, updated 10 Mar 2026",
+        "dev_notes": "excluded_descriptors are statement descriptors from the T&Cs, kept for reference only; the engine does not match them."
       },
       "transfer": { "partners": ["KrisFlyer (UNI$5,000 = 10,000 miles)", "Asia Miles", "AirAsia (poor value)"], "fee_sgd": 27, "block_miles": 10000 },
       "points_expiry": "Points last 2 years, to the end of the quarter they were earned in.",
       "points_expiry_months": 24,
-      "gotchas": ["UOB's app doesn't track the two S$600 caps.", "S$4.99 earns nothing, and S$9.99 earns as S$5."],
-      "source": "https://mainlymiles.com/review/uob-preferred-visa",
+      "gotchas": ["UOB's app doesn't track the two S$600 caps.", "S$4.99 earns nothing, and S$9.99 earns as S$5.", "The bonus is capped at UNI$1,080 a month in each category, which is S$600 of spend.", "SimplyGo UNI$ are added up for the month and credited on the 7th of the next month."],
+      "source": "UOB Preferred Visa terms, version 3.0, 10 Mar 2026; https://mainlymiles.com/review/uob-preferred-visa",
       "last_verified": "2026-09-30"
     },
     {

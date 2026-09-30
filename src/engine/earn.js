@@ -250,7 +250,8 @@ function evaluate(card, p, state, ctx) {
       pendingBonusSgd: best.pendingBonus / 100,
     });
     result.warnings.push(...best.warnings);
-    result.unconfirmed ||= !!(best.matchUnconfirmed || best.rule.needs_verification || best.unconfirmed);
+    // unconfirmed_methods: the rule lists a method the bank's terms don't clearly cover (e.g. in-app Apple Pay).
+    result.unconfirmed ||= !!(best.matchUnconfirmed || best.rule.needs_verification || best.unconfirmed || best.rule.unconfirmed_methods?.includes(p.method));
     if (best.rule.promotion && best.rule.valid_until) result.warnings.push(`Promotion ends ${formatDay(best.rule.valid_until)}.`);
     for (const d of best.rule.disputed || []) {
       if (d.resolved || answers[d.id]?.answer === 'yes' || !disputeApplies(d, p)) continue;

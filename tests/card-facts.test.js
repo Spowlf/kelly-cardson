@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { earn, summarizeCycle } from '../src/engine/index.js';
+import { earn, summarizeCycle, recommend } from '../src/engine/index.js';
 
 const load = (p) => JSON.parse(readFileSync(new URL(`../data/${p}`, import.meta.url)));
 const { cards } = load('cards.json');
@@ -86,6 +86,30 @@ test('subscriptions: UOB Preferred Visa earns base, Citi Rewards is "check on st
   const citi = buy('citi_rewards', 100, { method: 'online_card_entry', category: 'subscriptions', merchant: 'Netflix' }, { userCard: { cardId: 'citi_rewards', statementDay: 15 } });
   assert.equal(citi.miles, 400);
   assert.equal(citi.disputes.length, 1);
+});
+
+// UOB Preferred Visa T&Cs Ver 3.0 (10 Mar 2026): the online list includes 9751 and 8012; the old
+// 9000-9999 exclusion range blocked 9751. In-app Apple Pay isn't said to count as online.
+test('UOB Preferred Visa: 9751 and 8012 earn the online bonus', () => {
+  for (const mcc of ['9751', '8012']) assert.equal(buy('uob_preferred_visa', 100, { method: 'online_card_entry', mcc }).miles, 400, mcc);
+});
+
+test('UOB Preferred Visa: in-app Apple Pay online is unconfirmed, card number is not', () => {
+  const inApp = buy('uob_preferred_visa', 100, { method: 'in_app_wallet', mcc: '5311' });
+  assert.equal(inApp.miles, 400);
+  assert.equal(inApp.unconfirmed, true);
+  assert.equal(buy('uob_preferred_visa', 100, { method: 'online_card_entry', mcc: '5311' }).unconfirmed, false);
+});
+
+test('UOB Preferred Visa: MRT / bus has no pay-by-phone hint', () => {
+  const out = recommend({
+    purchase: { amount: 2, date, channel: 'transit', category: 'public_transport', fcy: false },
+    cards, myCards: [{ cardId: 'uob_preferred_visa' }], categories,
+  });
+  const r = out.results[0];
+  assert.equal(r.best.method, 'simplygo');
+  assert.equal(r.methodHint, null);
+  assert.doesNotMatch(r.best.reason, /phone tap cap/);
 });
 
 test('every cap has a readable name', () => {

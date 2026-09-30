@@ -49,6 +49,7 @@ for (const card of cards) {
       assert.ok(r.currencies.every((c) => ['SGD', 'FCY'].includes(c)), `${r.id} currencies`);
       assert.ok(MODES.includes(r.match.mode), `${r.id} mode ${r.match.mode}`);
       if (r.cap_bucket) assert.ok(card.caps[r.cap_bucket], `${r.id} bucket ${r.cap_bucket}`);
+      for (const m of r.unconfirmed_methods || []) assert.ok(r.methods.includes(m), `${r.id} unconfirmed method ${m} is not one of its methods`);
       for (const d of [r.valid_from, r.valid_until].filter(Boolean)) assert.match(d, /^\d{4}-\d{2}-\d{2}$/, `${r.id} date ${d}`);
       if (r.promotion) assert.ok(r.valid_until, `${r.id} promotion needs valid_until`);
       for (const d of r.disputed || []) {
