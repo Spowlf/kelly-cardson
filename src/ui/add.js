@@ -122,7 +122,14 @@ export function renderAdd(root, { go }) {
     e.preventDefault();
     if (!(Number(f.amount) > 0) || !f.merchant) return;
     saveButton.disabled = true;
-    const txn = await saveTxn({ ...f, merchant: f.merchant.name, amount: Number(f.amount) });
+    let txn;
+    try {
+      txn = await saveTxn({ ...f, merchant: f.merchant.name, amount: Number(f.amount) });
+    } catch {
+      toast('Nothing changed: the purchase couldn\'t be saved on this phone. Try again.');
+      renderAmount();
+      return;
+    }
     f.id = newId();
     toast(`Saved ${money(txn.amount)} at ${txn.merchant}`, { label: 'Undo', run: async () => { await deleteTxn(txn.id); toast(`Deleted ${money(txn.amount)} at ${txn.merchant}`); picker.render(); } });
     // Card, method and date stay for a run of purchases; merchant details don't carry over.

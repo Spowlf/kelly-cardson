@@ -63,3 +63,14 @@ test('cap warning at 85%, shown as "at least" used', () => {
   assert.equal(s.buckets.tap.label, 'At least S$510 of S$600 used');
   assert.equal(s.buckets.online.warn, false);
 });
+
+test('same-day purchases fill a cap in the order they were entered, whatever order storage returns', () => {
+  const first = txn('uob_ppv', 500, { id: 'zzz', createdAt: 1 });
+  const second = txn('uob_ppv', 200, { id: 'aaa', createdAt: 2 });
+  for (const txns of [[first, second], [second, first]]) {
+    const s = summarizeCycle({ card: uobPpv, categories, txns, date: first.date });
+    const byId = Object.fromEntries(s.entries.map((e) => [e.txn.id, e.result]));
+    assert.equal(byId.zzz.bonusSgd, 500);
+    assert.equal(byId.aaa.bonusSgd, 100);
+  }
+});

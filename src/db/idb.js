@@ -51,6 +51,8 @@ export async function putMany(name, values) {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    // An abort (e.g. storage full) may come without an error event; without this the caller would wait forever.
+    tx.onabort = () => reject(tx.error || new Error('Saving was cancelled'));
   });
 }
 

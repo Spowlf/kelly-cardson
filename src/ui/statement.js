@@ -81,10 +81,18 @@ export function openStatementCheck(cardId, onDone) {
 
   async function save(withCatchUp) {
     let txn = null;
-    if (withCatchUp) txn = await saveTxn(catchUpTxn(check, bucketInput.value || undefined));
-    await saveStatement({ cardId, cycleKey: check.cycle.key, statementTotalSgd: Number(totalInput.value.replace(/[^\d.]/g, '')), loggedTotalSgd: check.loggedSgd, catchUpTxnId: txn?.id ?? null });
+    try {
+      if (withCatchUp) txn = await saveTxn(catchUpTxn(check, bucketInput.value || undefined));
+      await saveStatement({ cardId, cycleKey: check.cycle.key, statementTotalSgd: Number(totalInput.value.replace(/[^\d.]/g, '')), loggedTotalSgd: check.loggedSgd, catchUpTxnId: txn?.id ?? null });
+    } catch {
+      toast(txn
+        ? `Added catch-up of ${money(txn.amount)}, but the statement check couldn't be saved. Save it again without a catch-up.`
+        : 'Nothing changed: the statement check couldn\'t be saved on this phone. Try again.');
+      if (txn) { update(); onDone?.(); }
+      return;
+    }
     s.close();
-    toast(txn ? `Catch-up of ${money(txn.amount)} added` : 'Statement check saved');
+    toast(txn ? `Added catch-up of ${money(txn.amount)}` : 'Saved statement check');
     onDone?.();
   }
 

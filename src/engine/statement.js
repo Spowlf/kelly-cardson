@@ -3,7 +3,7 @@
 import { cycleFor, formatDay } from './cycles.js';
 import { resultsByTxn } from './dashboard.js';
 import { toCents, toSgd } from './rounding.js';
-import { formatSgd } from './earn.js';
+import { formatSgd, byWhen } from './earn.js';
 
 /**
  * @param {object} args
@@ -61,7 +61,7 @@ export function disputedInStatement({ card, userCard, txns, categories, settings
   const results = resultsByTxn({ cards: [card], myCards: [userCard], txns, categories, settings });
   return txns
     .filter((t) => t.cardId === card.id && t.date >= cycle.start && t.date <= cycle.end)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .sort(byWhen)
     .flatMap((txn) => (results.get(txn.id)?.disputes || []).map((dispute) => ({ txn, dispute })));
 }
 
@@ -92,7 +92,7 @@ export function statementQuestions({ card, userCard, txns, categories, settings,
   const out = [];
   const list = txns
     .filter((t) => t.cardId === card.id && !t.isCatchUp && t.merchant && t.date >= cycle.start && t.date <= cycle.end)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    .sort(byWhen);
   for (const txn of list) {
     const r = results.get(txn.id);
     if (!r || txn.cardResults?.[card.id]) continue;

@@ -141,8 +141,15 @@ export function renderWhich(root, { go }) {
     }
   }
 
-  async function paid(result, purchase) {
-    const txn = await saveTxn({ ...purchase, cardId: result.cardId, method: result.best.method, date: today() });
+  async function paid(result, purchase, button) {
+    let txn;
+    try {
+      txn = await saveTxn({ ...purchase, cardId: result.cardId, method: result.best.method, date: today() });
+    } catch {
+      toast('Nothing changed: the purchase couldn\'t be saved on this phone. Try again.');
+      button.disabled = false;
+      return;
+    }
     const card = state.cardsById[result.cardId];
     toast(`Saved ${money(txn.amount)}${txn.merchant ? ` at ${txn.merchant}` : ''} on ${shortName(card)}`, {
       label: 'Undo',
@@ -179,7 +186,7 @@ export function renderWhich(root, { go }) {
           h('span', { class: 'num' }, `${pooled ? '~' : ''}${miles(b.rankMiles)}`), h('span', { class: 'unit' }, 'miles'))),
       h('p', { class: 'reason' }, b.reason),
       lines,
-      h('button', { type: 'button', class: `button ${isTop ? 'primary' : 'secondary'}`, onclick: (e) => { e.currentTarget.disabled = true; paid(r, purchase); } }, 'Paid with this'));
+      h('button', { type: 'button', class: `button ${isTop ? 'primary' : 'secondary'}`, onclick: (e) => { e.currentTarget.disabled = true; paid(r, purchase, e.currentTarget); } }, 'Paid with this'));
   }
 
   renderChannels();

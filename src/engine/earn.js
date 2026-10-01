@@ -61,6 +61,10 @@ function blocksFor(card, method) {
   return { base, bonus, poolPrefix: override ? `m:${method}` : null };
 }
 
+// Oldest first, and in the order she entered them within a day. Storage returns purchases by their
+// random id, so date alone would let a same-day pair swap which one used up a cap.
+export const byWhen = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
 const newState = () => ({ cardSpend: 0, buckets: {}, pools: {} });
 
 function applyDelta(state, delta) {
@@ -334,7 +338,7 @@ function replay(card, ctx, txns, cycle, excludeId) {
   const inCycle = (txns || [])
     .filter((t) => t.cardId === card.id && (excludeId === undefined || t.id !== excludeId))
     .filter((t) => cycleOf(card, ctx.userCard, t.date).key === cycle.key)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    .sort(byWhen);
   let state = newState();
   const entries = [];
   for (const txn of inCycle) {
