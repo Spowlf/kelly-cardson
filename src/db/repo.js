@@ -22,7 +22,6 @@ export const state = {
   settings: {},
 };
 
-const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
 const fetchJson = async (path) => (await fetch(path, { cache: 'no-cache' })).json();
 
 export async function load() {
@@ -32,9 +31,16 @@ export async function load() {
   state.categories = catsJson.categories;
   state.categoriesById = Object.fromEntries(state.categories.map((c) => [c.id, c]));
 
-  const [myCards, txns, merchants, statements, balances, settings] = await Promise.all([
-    db.getAll('myCards'), db.getAll('txns'), db.getAll('merchants'), db.getAll('statements'), db.getAll('balances'), db.getAll('settings'),
-  ]);
+  let stores;
+  try {
+    stores = await Promise.all([
+      db.getAll('myCards'), db.getAll('txns'), db.getAll('merchants'), db.getAll('statements'), db.getAll('balances'), db.getAll('settings'),
+    ]);
+  } catch (err) {
+    // Not the card data: the phone's storage. Said apart, so the app shows the right fix.
+    throw Object.assign(new Error(err?.message || 'Storage unavailable'), { storage: true });
+  }
+  const [myCards, txns, merchants, statements, balances, settings] = stores;
   state.myCards = sortByPriority(myCards);
   state.txns = txns;
   state.statements = statements;
@@ -82,6 +88,22 @@ export async function setSetting(key, value) {
   await db.put('settings', { key, value });
 }
 
+// ---- Drafts ----------------------------------------------------------------
+// A half-typed form, kept on the phone so closing the app (or a call at the till) loses nothing.
+// Written on every change and cleared after a save. Kept out of backups.
+
+const DRAFT = 'draft:';
+export const loadDraft = (name) => state.settings[DRAFT + name] ?? null;
+
+export async function saveDraft(name, form) {
+  if (form) return setSetting(DRAFT + name, form);
+  if (!(DRAFT + name in state.settings)) return;
+  delete state.settings[DRAFT + name];
+  await db.remove('settings', DRAFT + name);
+}
+
+export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
+
 // ---- Her cards -------------------------------------------------------------
 
 const sortByPriority = (list) => list.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
@@ -113,9 +135,17 @@ export async function updateMyCard(cardId, patch) {
   return record;
 }
 
+// Returns the removed record, so Undo can put it back with its statement day, choices and place.
 export async function removeMyCard(cardId) {
+  const record = state.myCards.find((c) => c.cardId === cardId);
   await db.remove('myCards', cardId);
   state.myCards = state.myCards.filter((c) => c.cardId !== cardId);
+  return record;
+}
+
+export async function restoreMyCard(record) {
+  await db.put('myCards', record);
+  state.myCards = sortByPriority([...state.myCards.filter((c) => c.cardId !== record.cardId), record]);
 }
 
 // Swap with the neighbour above (-1) or below (+1) in her priority order.
@@ -164,12 +194,22 @@ export async function saveTxn(fields) {
   return txn;
 }
 
+// Returns the deleted purchase, so Undo can put it back.
 export async function deleteTxn(id) {
   const txn = state.txns.find((t) => t.id === id);
   const m = txn && !txn.isCatchUp && merchantOf(txn);
   if (m?.useCount > 0) await putMerchant({ ...m, useCount: m.useCount - 1 });
   await db.remove('txns', id);
   state.txns = state.txns.filter((t) => t.id !== id);
+  return txn;
+}
+
+// Undo a delete: the same purchase under the same id, and its merchant's use counted again.
+export async function restoreTxn(txn) {
+  const m = !txn.isCatchUp && merchantOf(txn);
+  if (m) await putMerchant({ ...m, useCount: (m.useCount || 0) + 1 });
+  await db.put('txns', txn);
+  state.txns = [...state.txns.filter((t) => t.id !== txn.id), txn];
 }
 
 // ---- Merchant memory -------------------------------------------------------
@@ -245,10 +285,15 @@ export async function rememberWhereHow(name, { channel, method }) {
 // Her edit on the merchant screen. Marks it edited, so pre-fill updates leave it alone.
 export const saveMerchant = (m, fields) => putMerchant(editMerchant(m, fields));
 
+// Returns the deleted merchant, so Undo can put it back with her edits.
 export async function deleteMerchant(id) {
+  const m = state.merchants.find((x) => x.id === id);
   await db.remove('merchants', id);
-  state.merchants = state.merchants.filter((m) => m.id !== id);
+  state.merchants = state.merchants.filter((x) => x.id !== id);
+  return m;
 }
+
+export const restoreMerchant = (m) => putMerchant(m);
 
 // What her statement showed for this merchant on one card.
 export async function saveStatementResult(name, cardId, earnedBonus) {
@@ -280,6 +325,7 @@ const BACKUP_STORES = ['myCards', 'txns', 'merchants', 'statements', 'balances',
 export async function exportData() {
   const stores = {};
   for (const name of BACKUP_STORES) stores[name] = await db.getAll(name);
+  stores.settings = stores.settings.filter((row) => !String(row.key).startsWith(DRAFT));
   return { app: 'miles-card-app', version: 1, exportedAt: new Date().toISOString(), stores };
 }
 

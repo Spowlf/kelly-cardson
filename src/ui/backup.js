@@ -18,7 +18,7 @@ export async function exportBackup() {
     }
   } catch (err) {
     if (err.name === 'AbortError') return false; // she closed the share sheet
-    toast(`Backup failed: ${err.message}`);
+    toast(`The backup wasn't saved: ${err.message}`);
     return false;
   }
   await setSetting('lastExportAt', Date.now());
@@ -37,7 +37,7 @@ export function importBackup(onDone) {
       try {
         backup = JSON.parse(await file.text());
       } catch {
-        toast('That file isn\'t a readable backup.');
+        toast('Nothing changed: that file isn\'t a readable backup.');
         return;
       }
       const count = backup?.stores?.txns?.length ?? 0;
@@ -45,7 +45,7 @@ export function importBackup(onDone) {
       if (!confirm(`Replace everything on this phone with the backup from ${from}? It has ${count} purchase${count === 1 ? '' : 's'}.`)) return;
       try {
         await importData(backup);
-        toast('Backup imported');
+        toast('Imported backup');
         onDone?.();
       } catch (err) {
         toast(`Nothing changed: ${err.message}`);

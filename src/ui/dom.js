@@ -72,11 +72,20 @@ export const unconfirmedTag = () => h('span', { class: 'tag tag-unconfirmed' }, 
 
 // A chip row where one value is selected. options: [{ value, label }]
 export function chips({ name, options, value, onChange, label }) {
-  const group = h('div', { class: 'chips', role: 'radiogroup', 'aria-label': label });
+  return radioGroup({ name, options, value, onChange, label, groupClass: 'chips', itemClass: 'chip' });
+}
+
+// A segmented control, for switching what the screen shows. Same options as chips(), so the two can't drift apart.
+export function segmented({ name, options, value, onChange, label }) {
+  return radioGroup({ name, options, value, onChange, label, groupClass: 'segmented', itemClass: 'segment' });
+}
+
+function radioGroup({ name, options, value, onChange, label, groupClass, itemClass }) {
+  const group = h('div', { class: groupClass, role: 'radiogroup', 'aria-label': label });
   const render = (current) => {
     group.replaceChildren(...options.map((o) => h('button', {
       type: 'button',
-      class: 'chip',
+      class: itemClass,
       role: 'radio',
       'aria-checked': String(o.value === current),
       dataset: { name, value: o.value },
@@ -87,6 +96,9 @@ export function chips({ name, options, value, onChange, label }) {
   group.set = render;
   return group;
 }
+
+// Smooth scrolling, unless she has asked for less motion (the CSS reduced-motion rule doesn't cover scrollIntoView).
+export const scrollBehaviour = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
 // Category <select>: earning categories first, then the no-miles ones.
 export function categorySelect(categories, value, props = {}) {

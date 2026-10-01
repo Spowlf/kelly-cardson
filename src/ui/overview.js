@@ -71,8 +71,10 @@ export function renderOverview(root, { go }) {
 }
 
 function progress(pct, tone, label) {
-  return h('div', { class: `bar bar-${tone}`, role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': label },
-    h('span', { class: 'bar-fill', style: `transform: scaleX(${Math.min(pct, 100) / 100})` }));
+  // Set through el.style: the Content-Security-Policy blocks style="" attributes.
+  const fill = h('span', { class: 'bar-fill' });
+  fill.style.transform = `scaleX(${Math.min(pct, 100) / 100})`;
+  return h('div', { class: `bar bar-${tone}`, role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': label }, fill);
 }
 
 function capBar(b) {
@@ -106,7 +108,7 @@ function balanceForm(p, render) {
       if (!(n >= 0) || points.value.trim() === '') { points.setCustomValidity('Enter the balance.'); points.reportValidity(); return; }
       await addBalance({ pool: p.pool, points: n, asOf: asOf.value || today() });
       s.close();
-      toast('Balance saved');
+      toast('Saved balance');
       render();
     },
   },

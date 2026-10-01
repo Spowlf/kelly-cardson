@@ -2,7 +2,7 @@
 
 import { h, field, sheet, toast, money, sgd, shortName, unconfirmedTag, methodPhrase, fill } from './dom.js';
 import { exportBackup, importBackup } from './backup.js';
-import { state, addMyCard, updateMyCard, removeMyCard, moveMyCard, hasCard, setSetting } from '../db/repo.js';
+import { state, addMyCard, updateMyCard, removeMyCard, restoreMyCard, moveMyCard, hasCard, setSetting } from '../db/repo.js';
 import { formatDay, today, DEFAULT_SETTINGS } from '../engine/index.js';
 
 export function renderCards(root) {
@@ -184,15 +184,39 @@ function cardForm(card, mine, render) {
     h('button', { type: 'submit', class: 'button primary' }, mine ? 'Save changes' : 'Add card'),
     mine ? h('button', {
       type: 'button', class: 'button danger',
-      onclick: async () => {
-        if (!confirm(`Remove ${shortName(card)} from your cards? Logged purchases stay.`)) return;
-        await removeMyCard(card.id);
+      onclick: async (e) => {
+        e.currentTarget.disabled = true;
+        const removed = await removeMyCard(card.id);
         s.close();
-        toast(`${shortName(card)} removed`);
         render();
+        toast(`Removed ${shortName(card)}. Logged purchases stay.`, { label: 'Undo', run: async () => { await restoreMyCard(removed); render(); } });
       },
     }, 'Remove card') : null));
   s = sheet(mine ? shortName(card) : `Add ${shortName(card)}`, form);
+}
+
+/**
+ * Fetches every app file and the card rules now (no waiting for the "Updated" bar), then reloads.
+ * It reloads even when nothing changed, since the files may have been refreshed in the background
+ * after this page loaded.
+ */
+async function updateApp(button) {
+  const sw = navigator.serviceWorker;
+  if (!sw?.controller) return location.reload();
+  button.disabled = true;
+  button.textContent = 'Checking for updates';
+  const reg = await sw.ready;
+  reg.update().catch(() => {});
+  const reply = await new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = (e) => resolve(e.data);
+    reg.active.postMessage({ type: 'check' }, [channel.port2]);
+    setTimeout(() => resolve(null), 20000);
+  });
+  if (reply?.reached) return location.reload();
+  toast('Nothing changed: the app\'s files couldn\'t be reached. Check your connection.');
+  button.disabled = false;
+  button.textContent = 'Update the app';
 }
 
 function settingsSection(rerender) {
@@ -202,10 +226,11 @@ function settingsSection(rerender) {
       const n = Math.max(0, Math.min(10, Math.round(Number(delay.value) || 0)));
       delay.value = String(n);
       await setSetting('postingDelayDays', n);
-      toast('Setting saved');
+      toast('Saved posting delay');
     },
   });
   const last = state.settings.lastExportAt;
+  const update = h('button', { type: 'button', class: 'button secondary', onclick: () => updateApp(update) }, 'Update the app');
   return h('section', {},
     h('h2', { class: 'subhead' }, 'Settings'),
     field('Posting delay in days', delay, 'How long purchases take to post. Near a cap reset, purchases within this many days are marked "may count next month".'),
@@ -213,5 +238,8 @@ function settingsSection(rerender) {
     h('p', { class: 'muted small' }, last ? `Last backup ${formatDay(today(new Date(last)))}.` : 'Not backed up yet.', ' Everything is stored only on this phone.'),
     h('div', { class: 'sheet-actions' },
       h('button', { type: 'button', class: 'button primary', onclick: async () => { if (await exportBackup()) rerender(); } }, 'Export backup'),
-      h('button', { type: 'button', class: 'button secondary', onclick: () => importBackup(rerender) }, 'Import backup')));
+      h('button', { type: 'button', class: 'button secondary', onclick: () => importBackup(rerender) }, 'Import backup')),
+    h('h2', { class: 'subhead' }, 'App'),
+    h('p', { class: 'muted small' }, 'Fetches the newest app and card rules, then reloads.'),
+    update);
 }

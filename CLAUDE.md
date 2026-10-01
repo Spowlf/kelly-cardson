@@ -36,6 +36,23 @@
 - Offline: `sw.js` precaches every app file (stale-while-revalidate). When adding a file under `src/`, add it to `FILES` in `sw.js`; `tests/sw.test.js` fails otherwise. Bump `CACHE` only to force-drop old caches.
 - Hosting: GitHub Pages serves the repo root; all paths are relative so it works under `/<repo>/`.
 
+## Decisions (from the expense tracker's lessons, 2026-10-01)
+
+- Updates: the service worker refreshes files with `cache: 'no-cache'` (Pages sends `max-age=600`), and the app asks it to check every file when it comes back on screen, at most once a minute, because a resumed home screen app fetches nothing. "Update the app" on My cards does the same check and reloads once the files were reached. `tests/sw-update.test.js` covers this.
+- Deletes happen straight away with Undo in the toast (purchases, merchants, removing a card). `confirm()` is kept only for importing a backup, which can't be undone.
+- Drafts: "Which card?" and Add keep what's typed in `settings` (`draft:which`, `draft:add`) on every change, cleared after a save, and left out of backups. Add picks its purchase id when the form starts, so a double tap or a second save updates instead of adding a copy.
+- A Content-Security-Policy in `index.html` allows only the app's own files. Set styles through `el.style`, never a `style=""` attribute (the policy blocks it).
+- Tab labels are small print, each tab as wide as its label. Under 360px they're 2px smaller: the one exception to a single small-print size.
+- `npm run dev` serves the app on http://localhost:3000 with no dependencies.
+
+## Design principles
+
+- Use only the colour tokens in `styles.css`. No gradients, glows, coloured top stripes, glass / blur or new accent colours.
+- Motion only explains a change of state (the top answer's figure moves only when the card or its miles change). No spring overshoot and no press scaling: pressed means a stronger background. Respect reduced motion, including `scrollIntoView` (`scrollBehaviour()` in `dom.js`).
+- Type: screen title, section heading, body, one small-print size (`--t-s`) and the number style.
+- One look per meaning: segmented controls (`segmented()`) switch what a screen shows; chips (`chips()`) pick a value. One primary button style and one secondary (text in the accent; danger is the same in red).
+- Text meets 4.5:1 in light and dark mode, pressed and hover states included.
+
 ## Writing style
 
 Applies to every string she sees: screens, sheets, toasts, reminders, engine reasons and warnings, and the text fields in `data/cards.json` and `data/categories.json` that the app shows (`label`, `notes`, `fee_notes`, `fee_reminder`, `gotchas`, `points_expiry`, `condition`, `disputed[].note`/`question`, cap `label`s). Developer-only detail in cards.json goes in `dev_notes`, which the app never shows.
@@ -46,3 +63,8 @@ Applies to every string she sees: screens, sheets, toasts, reminders, engine rea
 - Money always has thousands separators: S$1,000.
 - User-facing text says "category code", never "MCC". Don't show code numbers or ranges except in the category code field.
 - Dates as "30 Sep 2026". Sources as linked text ("Mainly Miles review"), never a raw URL.
+- Say what to do, not what went wrong. Errors say whether anything changed: "Nothing changed: …".
+- Buttons are verbs for what happens ("Save S$4.20"). Disabled buttons say what's missing ("Enter an amount").
+- Short confirmation toasts start with a past-tense verb and have no period ("Deleted Din Tai Fung"). Toasts with a full sentence end with one.
+- Estimated figures carry a "~" and say how they're counted.
+- `tests/writing-style.test.js` checks the basics for the shown text in `data/cards.json` and `data/categories.json`.

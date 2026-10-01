@@ -1,12 +1,16 @@
 // "Which card?": merchant, amount, how she's paying -> her cards ranked, with "Paid with this".
 
 import { h, chips, categorySelect, field, sheet, toast, money, miles, shortName, unconfirmedTag, METHOD_NAMES, METHOD_VERBS, CHANNELS, channelsFor, fill } from './dom.js';
-import { state, saveTxn, deleteTxn, findMerchant, forEngine, engineTxns, rememberWhereHow } from '../db/repo.js';
+import { state, saveTxn, deleteTxn, findMerchant, forEngine, engineTxns, rememberWhereHow, loadDraft, saveDraft } from '../db/repo.js';
 import { recommend, kiasumilesPrompt, today } from '../engine/index.js';
 import { merchantChips } from './merchants.js';
 
 // Kept between visits to the tab.
 const form = { merchant: '', amount: '', category: '', channel: 'in_person', method: 'any', fcy: false };
+// The top answer last shown, so its figure moves only when the card or its miles change.
+let lastTop = null;
+// The form also survives closing the app: it's restored once, from the draft.
+let restored = false;
 
 export function renderWhich(root, { go }) {
   if (!state.myCards.length) {
@@ -17,6 +21,10 @@ export function renderWhich(root, { go }) {
     return;
   }
 
+  if (!restored) {
+    Object.assign(form, loadDraft('which'));
+    restored = true;
+  }
   const results = h('div', { class: 'results', 'aria-live': 'polite' });
 
   const merchantInput = h('input', {
@@ -88,6 +96,7 @@ export function renderWhich(root, { go }) {
   }
 
   function update() {
+    saveDraft('which', form.amount || form.merchant.trim() ? { ...form } : null).catch(() => {});
     const amount = Number(form.amount);
     if (!(amount > 0)) {
       fill(results, h('p', { class: 'muted pad' }, 'Enter the amount to see which card earns the most.'));
@@ -106,9 +115,12 @@ export function renderWhich(root, { go }) {
       return;
     }
     const [top, ...rest] = out.results;
+    const topKey = `${top.cardId}:${top.best.method}:${top.best.rankMiles}`;
+    const changed = lastTop !== null && topKey !== lastTop;
+    lastTop = topKey;
     const prompt = kiasumilesPrompt({ purchase, cards: state.cards, myCards: state.myCards, txns, categories: state.categories, settings: state.settings, today: today() });
     fill(results, 
-      answer(top, purchase, true),
+      answer(top, purchase, true, changed),
       rest.length ? h('h2', { class: 'subhead' }, 'Other cards') : null,
       h('ol', { class: 'fallbacks' }, rest.map((r) => h('li', {}, answer(r, purchase, false)))),
       prompt ? h('div', { class: 'km' },
@@ -141,7 +153,7 @@ export function renderWhich(root, { go }) {
     update();
   }
 
-  function answer(r, purchase, isTop) {
+  function answer(r, purchase, isTop, changed = false) {
     const b = r.best;
     const card = state.cardsById[r.cardId];
     const pooled = b.rankMiles !== b.miles;
@@ -158,7 +170,7 @@ export function renderWhich(root, { go }) {
       ...b.warnings.map((w) => h('p', { class: 'warning' }, w)),
       b.fcyFeeSgd ? h('p', { class: 'fee' }, `Foreign currency fee: ${money(b.fcyFeeSgd)}${b.costPerMileSgd ? `, or S$${b.costPerMileSgd.toFixed(4)} a mile` : ''}.`) : null,
     ];
-    return h('article', { class: `answer ${isTop ? 'answer-top' : 'answer-row'} tone-${tone}` },
+    return h('article', { class: `answer ${isTop ? 'answer-top' : 'answer-row'} tone-${tone}${changed ? ' changed' : ''}` },
       h('div', { class: 'answer-main' },
         h('div', {},
           h('p', { class: 'answer-card' }, shortName(card), b.unconfirmed ? unconfirmedTag() : null),

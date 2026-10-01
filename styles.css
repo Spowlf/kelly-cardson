@@ -19,8 +19,7 @@
   /* Rounded on Apple devices; elsewhere the system sans. Numbers always use lining, tabular figures. */
   --font-num: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Type scale (px): 13 / 15 / 17 / 22 / 34 / 56 */
-  --t-xs: 0.8125rem;
+  /* Type scale (px): 15 / 17 / 22 / 34 / 56. One small-print size. */
   --t-s: 0.9375rem;
   --t-m: 1.0625rem;
   --t-l: 1.375rem;
@@ -39,10 +38,14 @@
   --r-panel: 22px;
   --touch: 48px;
   --tabbar: 64px;
-  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* Motion only explains a change of state: no overshoot, no press scaling. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Behind a segmented control. */
+  --track: #F6E4EB;
 
   /* Depth: base (paper) -> surface (lists) -> raised (the answer) -> floating (sheets, toast) */
-  --shadow-raised: 0 1px 2px rgb(59 29 42 / 0.06), 0 8px 24px -6px rgb(200 50 110 / 0.24);
+  /* Neutral, not tinted with the accent: raised because it's the answer, not to glow. */
+  --shadow-raised: 0 1px 2px rgb(59 29 42 / 0.06), 0 8px 24px -6px rgb(59 29 42 / 0.18);
   --shadow-float: 0 2px 6px rgb(59 29 42 / 0.08), 0 20px 48px -12px rgb(59 29 42 / 0.32);
 
   color-scheme: light;
@@ -63,7 +66,8 @@
     --kaya-soft: #3A2A14;
     --chilli: #FF8F80;
     --chilli-soft: #45201B;
-    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -8px rgb(255 138 181 / 0.22);
+    --track: #33202A;
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -8px rgb(0 0 0 / 0.5);
     --shadow-float: 0 2px 6px rgb(0 0 0 / 0.4), 0 20px 48px -12px rgb(0 0 0 / 0.6);
     color-scheme: dark;
   }
@@ -113,12 +117,12 @@ main {
 .tabs {
   position: fixed;
   inset: auto 0 0 0;
+  /* Five tabs: each as wide as its label, the spare space shared between them so no two labels touch. */
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, auto);
+  justify-content: space-evenly;
   padding-bottom: env(safe-area-inset-bottom);
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: var(--paper);
   border-top: 1px solid var(--line);
   z-index: 10;
 }
@@ -131,8 +135,9 @@ main {
   min-height: var(--tabbar);
   color: var(--ink-2);
   text-decoration: none;
-  font-size: 0.625rem;
+  font-size: var(--t-s);
   font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
 }
 .tabs svg {
@@ -145,14 +150,18 @@ main {
   stroke-linejoin: round;
 }
 .tabs a[aria-current="page"] { color: var(--accent); }
-.tabs a:active svg { transform: scale(0.9); }
+.tabs a:active { color: var(--accent-press); background: var(--accent-soft); }
 .tabs a:focus-visible { outline: 3px solid var(--accent); outline-offset: -6px; border-radius: 14px; }
+/* Narrow phones: tighter letters so five labels keep apart; the narrowest also get labels 2px smaller,
+   the one exception to a single small-print size (rather than shortening "Which card?"). */
+@media (max-width: 389px) { .tabs a { letter-spacing: -0.02em; } }
+@media (max-width: 359px) { .tabs a { font-size: calc(var(--t-s) - 2px); letter-spacing: -0.03em; } }
 
 /* ---- Form controls ---------------------------------------------------------- */
 
 .field { display: grid; gap: var(--s1); margin-top: var(--s4); }
 .field-label { font-size: var(--t-s); font-weight: 600; color: var(--ink-2); }
-.field-hint { font-size: var(--t-xs); color: var(--ink-2); }
+.field-hint { font-size: var(--t-s); color: var(--ink-2); }
 
 input[type="text"], input[type="number"], input[type="date"], select {
   width: 100%;
@@ -205,7 +214,6 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   font-size: var(--t-s);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.25s var(--spring);
 }
 .chip[aria-checked="true"], .chip[aria-pressed="true"] {
   background: var(--accent);
@@ -213,7 +221,8 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   color: var(--on-accent);
 }
 .chip:hover { border-color: var(--ink-2); }
-.chip:active { transform: scale(0.95); }
+.chip:active { background: var(--accent-soft); }
+.chip[aria-checked="true"]:active, .chip[aria-pressed="true"]:active { background: var(--accent-press); }
 .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .chip-add { border-style: dashed; color: var(--accent); }
 .link-button { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
@@ -232,8 +241,24 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   cursor: pointer;
 }
 .suggestion:hover { background: color-mix(in srgb, var(--accent-soft) 80%, var(--accent)); }
-.suggestion:active { transform: scale(0.96); }
+.suggestion:active { background: color-mix(in srgb, var(--accent-soft) 65%, var(--accent)); }
 .suggestion:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* A segmented control switches what the screen shows; chips pick a value. */
+.segmented {
+  display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 2px;
+  padding: 3px; border-radius: var(--r-control); background: var(--track); box-shadow: inset 0 0 0 1px var(--line);
+}
+.segment {
+  min-height: 40px; padding: 0 var(--s2); border: 0; border-radius: 9px;
+  background: transparent; color: var(--ink-2); font-size: var(--t-s); font-weight: 600; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (hover: hover) { .segment:hover { background: var(--surface); color: var(--ink); } }
+.segment:active { background: var(--surface); color: var(--ink); }
+.segment[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
+.segment[aria-checked="true"]:active { background: var(--accent-press); }
+.segment:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 /* ---- Buttons ---------------------------------------------------------------- */
 
@@ -249,17 +274,17 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   font-size: var(--t-m);
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.3s var(--spring), opacity 0.2s;
 }
-.button:active { transform: scale(0.97); }
 .button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-.button:disabled { opacity: 0.45; cursor: default; transform: none; }
 .button.primary { background: var(--accent); color: var(--on-accent); }
-.button.primary:hover:not(:disabled) { background: var(--accent-press); }
-.button.secondary { background: transparent; color: var(--accent); border: 1.5px solid currentColor; min-height: 44px; }
-.button.secondary:hover { background: var(--accent-soft); }
-.button.danger { background: transparent; color: var(--chilli); }
-.button.danger:hover { background: var(--chilli-soft); }
+.button.primary:hover:not(:disabled), .button.primary:active:not(:disabled) { background: var(--accent-press); }
+/* One secondary style: text in the accent. Danger is the same style in red. */
+.button.secondary, .button.danger { background: transparent; color: var(--accent); min-height: 44px; }
+.button.danger { color: var(--chilli); }
+.button.secondary:hover:not(:disabled), .button.secondary:active:not(:disabled) { background: var(--accent-soft); color: var(--accent-press); }
+.button.danger:hover:not(:disabled), .button.danger:active:not(:disabled) { background: var(--chilli-soft); }
+/* Disabled says what's missing, so its text stays readable: muted ink inside a thin outline. */
+.button:disabled, .button.primary:disabled { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line); cursor: default; }
 
 .icon-button {
   width: var(--touch);
@@ -272,7 +297,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   color: var(--ink-2);
 }
 .icon-button:hover:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
-.icon-button:active:not(:disabled) { transform: scale(0.9); }
+.icon-button:active:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
 .icon-button:focus-visible { outline: 3px solid var(--accent); outline-offset: -2px; }
 .icon-button:disabled { opacity: 0.25; cursor: default; }
 
@@ -287,7 +312,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .answer-method { color: var(--ink-2); }
 .answer-miles { text-align: right; font-family: var(--font-num); line-height: 1; flex: none; }
 .answer-miles .num { display: block; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
-.answer-miles .unit { font-size: var(--t-xs); color: var(--ink-2); font-weight: 600; }
+.answer-miles .unit { font-size: var(--t-s); color: var(--ink-2); font-weight: 600; }
 .reason { font-size: var(--t-s); }
 .hint, .warning, .fee { font-size: var(--t-s); padding: var(--s2) var(--s3); border-radius: 10px; }
 .hint { background: var(--accent-soft); }
@@ -301,20 +326,18 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   background: var(--surface);
   border-radius: var(--r-panel);
   box-shadow: var(--shadow-raised);
-  border-top: 5px solid var(--accent);
-  animation: settle 0.45s var(--spring);
 }
 .answer-top .answer-card { font-size: var(--t-l); line-height: 1.2; letter-spacing: -0.01em; }
 .answer-top .answer-method { font-size: var(--t-m); font-weight: 600; color: var(--accent); }
 .answer-top .answer-miles .num { font-size: var(--t-xxl); }
-.answer-top.tone-fallback { border-top-color: var(--kaya); }
 .answer-top.tone-fallback .answer-method { color: var(--kaya); }
-.answer-top.tone-avoid { border-top-color: var(--chilli); }
 .answer-top.tone-avoid .answer-method { color: var(--chilli); }
 .answer-quiet { padding: var(--s5) var(--s4); background: var(--surface); border-radius: var(--r-panel); border: 1px solid var(--line); }
 
-@keyframes settle {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+/* The top figure moves only when the card or its miles change (which.js remembers the last one). */
+.answer-top.changed .answer-miles .num { animation: changed 0.3s var(--ease-out); }
+@keyframes changed {
+  from { opacity: 0.4; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
 
@@ -332,7 +355,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--ink);
-  font-size: var(--t-xs);
+  font-size: var(--t-s);
   font-weight: 600;
   line-height: 1.5;
 }
@@ -351,14 +374,13 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 .pad-display .currency { font-size: var(--t-l); color: var(--ink-2); font-weight: 700; }
-.pad-display .num { font-size: 4rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.pad-display .num { font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
 .add-form > input[type="text"] { margin-top: var(--s2); }
 .recent { margin-top: var(--s2); }
 .save-summary { margin-top: var(--s4); font-size: var(--t-s); color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 0 var(--s1); align-items: baseline; }
 .save-summary strong { color: var(--ink); }
 .save-summary .change { margin-left: auto; min-height: 40px; padding: 0 var(--s3); border: 0; background: transparent; color: var(--accent); font-weight: 600; border-radius: 10px; cursor: pointer; }
-.save-summary .change:active { transform: scale(0.95); }
-.save-summary .change:hover { background: var(--accent-soft); }
+.save-summary .change:hover, .save-summary .change:active { background: var(--accent-soft); color: var(--accent-press); }
 .save-summary .change:focus-visible { outline: 3px solid var(--accent); }
 .add-details { margin-top: var(--s5); padding-top: var(--s2); border-top: 1px solid var(--line); scroll-margin-top: var(--s4); }
 .keypad {
@@ -373,13 +395,12 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   border-radius: 16px;
   background: var(--surface);
   font-family: var(--font-num);
-  font-size: 1.75rem;
+  font-size: var(--t-l);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s var(--spring);
 }
 .key:hover { background: color-mix(in srgb, var(--surface) 85%, var(--accent-soft)); }
-.key:active { transform: scale(0.93); background: var(--accent-soft); }
+.key:active { background: var(--accent-soft); }
 .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .save { margin-top: var(--s3); }
 
@@ -401,7 +422,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   cursor: pointer;
 }
 .list-row:hover { background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft)); }
-.list-row:active { opacity: 0.7; }
+.list-row:active { background: var(--accent-soft); }
 .list-row:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .list-main { display: grid; min-width: 0; }
 .list-title { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
@@ -417,7 +438,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .empty .button { margin-top: var(--s2); }
 .empty-line { color: var(--ink-2); padding: var(--s3) 0; }
 .muted { color: var(--ink-2); }
-.small { font-size: var(--t-xs); margin-top: var(--s2); }
+.small { font-size: var(--t-s); margin-top: var(--s2); }
 .block { display: block; }
 
 /* ---- Sheets and toast (floating) --------------------------------------------------- */
@@ -435,7 +456,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   box-shadow: var(--shadow-float);
   overflow-y: auto;
 }
-.sheet[open] { animation: rise 0.4s var(--spring); }
+.sheet[open] { animation: rise 0.25s var(--ease-out); }
 .sheet::backdrop { background: rgb(43 16 28 / 0.45); }
 .sheet-head {
   position: sticky;
@@ -453,7 +474,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .sheet-actions { display: grid; gap: var(--s2); margin-top: var(--s5); }
 
 @keyframes rise {
-  from { transform: translateY(40px); opacity: 0; }
+  from { transform: translateY(24px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
 
@@ -485,7 +506,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
-  transition: opacity 0.2s, transform 0.35s var(--spring);
+  transition: opacity 0.2s, transform 0.2s var(--ease-out);
   z-index: 20;
 }
 #toast.show { opacity: 1; transform: none; pointer-events: auto; }
@@ -517,12 +538,12 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   box-shadow: var(--shadow-float);
   cursor: pointer;
   transform: translateX(-50%);
-  animation: update-in 0.4s var(--spring);
+  animation: update-in 0.25s var(--ease-out);
   z-index: 30;
 }
 .update:hover { background: var(--accent-press); }
 .update:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.update:active { transform: translateX(-50%) scale(0.96); }
+.update:active { background: var(--accent-press); }
 @keyframes update-in {
   from { opacity: 0; transform: translate(-50%, -12px); }
   to { opacity: 1; transform: translateX(-50%); }
@@ -541,9 +562,12 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 }
 .reminder-fee, .reminder-signup { background: var(--kaya-soft); }
 .reminder .text-button { justify-self: start; margin-left: calc(-1 * var(--s3)); }
+/* Accent text on the pink reminder fill is 4.1:1 in light mode; the pressed shade meets 4.5:1 on every fill. */
+.reminder .text-button { color: var(--accent-press); }
+.reminder .text-button:hover, .reminder .text-button:active { background: var(--surface); }
 
 .total { padding: var(--s2) 0 var(--s3); }
-.total-num { font-family: var(--font-num); font-size: 4rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.total-num { font-family: var(--font-num); font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .total-label { color: var(--ink-2); font-weight: 600; margin-top: var(--s1); }
 
 .cap-cards { display: grid; gap: var(--s3); }
@@ -555,11 +579,11 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .cap-line { display: flex; justify-content: space-between; font-size: var(--t-s); }
 .cap-name { font-weight: 600; }
 .cap-left { font-family: var(--font-num); font-weight: 700; font-variant-numeric: tabular-nums; }
-.cap-sub { font-size: var(--t-xs); color: var(--ink-2); }
+.cap-sub { font-size: var(--t-s); color: var(--ink-2); }
 .cap-card .text-button { justify-self: start; margin-left: calc(-1 * var(--s3)); }
 
 .bar { height: 10px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
-.bar-fill { display: block; height: 100%; background: var(--accent); border-radius: inherit; transform-origin: left; transition: transform 0.6s var(--spring); }
+.bar-fill { display: block; height: 100%; background: var(--accent); border-radius: inherit; transform-origin: left; transition: transform 0.6s var(--ease-out); }
 .bar-warn .bar-fill { background: var(--kaya); }
 .bar-over .bar-fill { background: var(--chilli); }
 .bar-met .bar-fill { background: var(--accent); }
@@ -567,7 +591,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
 .pool { display: grid; gap: var(--s2); padding: var(--s3) var(--s4); }
 .pool-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
 .pool-num { font-family: var(--font-num); font-size: var(--t-l); font-weight: 800; text-align: right; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.pool-num .unit { display: block; font-size: var(--t-xs); color: var(--ink-2); font-weight: 600; }
+.pool-num .unit { display: block; font-size: var(--t-s); color: var(--ink-2); font-weight: 600; }
 .pool .text-button { justify-self: start; margin-left: calc(-1 * var(--s3)); }
 
 .text-button {
@@ -581,8 +605,7 @@ input:focus-visible, select:focus-visible, summary:focus-visible {
   font-weight: 700;
   cursor: pointer;
 }
-.text-button:hover { background: var(--accent-soft); }
-.text-button:active { transform: scale(0.96); }
+.text-button:hover, .text-button:active { background: var(--accent-soft); color: var(--accent-press); }
 .text-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
 
 .statement-outcome { display: grid; gap: var(--s3); margin-top: var(--s4); }

@@ -1,7 +1,7 @@
 // History: logged purchases (edit or delete) and merchant memory (edit or delete).
 
-import { h, chips, categorySelect, field, sheet, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, channelsFor, fill } from './dom.js';
-import { state, saveTxn, deleteTxn, saveMerchant, deleteMerchant, engineTxns, findMerchant } from '../db/repo.js';
+import { h, segmented, categorySelect, field, sheet, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, channelsFor, fill } from './dom.js';
+import { state, saveTxn, deleteTxn, restoreTxn, saveMerchant, deleteMerchant, restoreMerchant, engineTxns, findMerchant } from '../db/repo.js';
 import { formatDay, today, resultsByTxn, codeFor, EARNED_BONUS, BASE_ONLY } from '../engine/index.js';
 import { codeButton, codeLabel, statusLabel } from './merchants.js';
 
@@ -10,8 +10,8 @@ let tab = 'purchases';
 export function renderHistory(root) {
   const body = h('div');
   const render = () => fill(body, tab === 'purchases' ? purchases(render) : merchants(render));
-  fill(root, 
-    chips({
+  fill(root,
+    segmented({
       name: 'history-tab', label: 'Show', value: tab,
       options: [{ value: 'purchases', label: 'Purchases' }, { value: 'merchants', label: 'Merchants' }],
       onChange: (v) => { tab = v; render(); },
@@ -69,7 +69,7 @@ function editTxn(t, render) {
       const details = t.isCatchUp ? { method: t.method, category: t.category } : { method: method.value, category: category.value };
       await saveTxn({ ...t, ...details, amount: value, merchant: merchant.value, date: date.value || t.date, cardId: card.value, fcy: fcy.checked });
       s.close();
-      toast('Purchase updated');
+      toast('Updated purchase');
       render();
     },
   },
@@ -84,12 +84,15 @@ function editTxn(t, render) {
     h('button', { type: 'submit', class: 'button primary' }, 'Save changes'),
     h('button', {
       type: 'button', class: 'button danger',
-      onclick: async () => {
-        if (!confirm(`Delete ${money(t.amount)}${t.merchant ? ` at ${t.merchant}` : ''}?`)) return;
-        await deleteTxn(t.id);
+      onclick: async (e) => {
+        e.currentTarget.disabled = true;
+        const deleted = await deleteTxn(t.id);
         s.close();
-        toast('Purchase deleted');
         render();
+        toast(`Deleted ${money(t.amount)}${t.merchant ? ` at ${t.merchant}` : ''}`, {
+          label: 'Undo',
+          run: async () => { await restoreTxn(deleted); render(); },
+        });
       },
     }, 'Delete purchase')));
   s = sheet('Edit purchase', form);
@@ -165,7 +168,7 @@ function editMerchant(m, render) {
         usualMethod: method.value || null, usualCardId: card.value || null, cardResults,
       });
       s.close();
-      toast('Merchant updated');
+      toast(`Updated ${name.value.trim() || m.name}`);
       render();
     },
   },
@@ -188,12 +191,12 @@ function editMerchant(m, render) {
     h('button', { type: 'submit', class: 'button primary' }, 'Save changes'),
     h('button', {
       type: 'button', class: 'button danger',
-      onclick: async () => {
-        if (!confirm(`Delete ${m.name}? Past purchases stay.`)) return;
-        await deleteMerchant(m.id);
+      onclick: async (e) => {
+        e.currentTarget.disabled = true;
+        const deleted = await deleteMerchant(m.id);
         s.close();
-        toast('Merchant deleted');
         render();
+        toast(`Deleted ${m.name}`, { label: 'Undo', run: async () => { await restoreMerchant(deleted); render(); } });
       },
     }, 'Delete merchant')));
   for (const input of [name, mcc]) input.addEventListener('input', () => input.setCustomValidity(''));

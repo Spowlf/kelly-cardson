@@ -8,6 +8,9 @@ import { renderCards } from './ui/cards.js';
 import { renderOverview } from './ui/overview.js';
 import { h } from './ui/dom.js';
 
+// iOS Safari only shows :active (pressed) styles once the page listens for touches.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 const SCREENS = {
   which: { title: 'Which card?', render: renderWhich },
   add: { title: 'Add a purchase', render: renderAdd },
@@ -39,9 +42,14 @@ async function start() {
   try {
     await load();
   } catch (err) {
-    view.replaceChildren(h('section', { class: 'empty' },
-      h('h2', {}, 'Couldn\'t load card data'),
-      h('p', {}, `Reload the page. If it keeps happening, the card data file may have a mistake: ${err.message}`)));
+    console.error(err);
+    view.replaceChildren(err.storage
+      ? h('section', { class: 'empty' },
+        h('h2', {}, 'Couldn\'t open this phone\'s storage'),
+        h('p', {}, 'Nothing was changed. Close the app fully and open it again. In a private browsing window, storage is turned off.'))
+      : h('section', { class: 'empty' },
+        h('h2', {}, 'Couldn\'t load card data'),
+        h('p', {}, `Nothing was changed. Reload the page. If it keeps happening, the card data file may have a mistake: ${err.message}`)));
     return;
   }
   window.addEventListener('hashchange', route);
@@ -58,9 +66,24 @@ function showUpdate() {
   button.hidden = false;
 }
 
+// Asks the service worker to look for new app files and card rules on coming back to the screen,
+// since a home screen app resumed from the background doesn't reload. (Opening it refreshes every
+// file anyway.) At most once a minute.
+const CHECK_MS = 60 * 1000;
+let lastCheck = Date.now();
+function checkForUpdate() {
+  if (Date.now() - lastCheck < CHECK_MS || !navigator.onLine) return;
+  lastCheck = Date.now();
+  navigator.serviceWorker.ready.then((reg) => {
+    reg.update().catch(() => {});
+    reg.active?.postMessage({ type: 'check' });
+  }).catch(() => {});
+}
+
 // Offline support, and ask the browser not to clear this site's storage under pressure.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
   navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'updated') showUpdate(); });
   // A new service worker taking over an already-controlled page means new app files too.
   const hadController = !!navigator.serviceWorker.controller;

@@ -1,7 +1,7 @@
 // Quick add: number pad for the amount, pick a merchant to fill everything from last time, save.
 
-import { h, chips, categorySelect, field, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, fill } from './dom.js';
-import { state, saveTxn, deleteTxn, findMerchant, lastTxnAt, forEngine, engineTxns } from '../db/repo.js';
+import { h, chips, categorySelect, field, toast, money, shortName, METHOD_NAMES, methodPhrase, CHANNELS, fill, scrollBehaviour } from './dom.js';
+import { state, saveTxn, deleteTxn, findMerchant, lastTxnAt, forEngine, engineTxns, loadDraft, saveDraft, newId } from '../db/repo.js';
 import { recommend, today } from '../engine/index.js';
 import { merchantChips } from './merchants.js';
 
@@ -16,7 +16,16 @@ export function renderAdd(root, { go }) {
     return;
   }
 
-  const f = { amount: '', merchant: null, category: '', cardId: state.myCards[0].cardId, method: 'mobile_tap', date: today(), fcy: false, from: null };
+  // id is chosen when the form starts, so saving twice (a double tap, or again after reopening) updates instead of adding a copy.
+  const f = { id: newId(), amount: '', merchant: null, category: '', cardId: state.myCards[0].cardId, method: 'mobile_tap', date: today(), fcy: false, from: null };
+
+  // The draft is written on every change, so closing the app mid-entry loses nothing.
+  const keep = () => {
+    const name = merchantInput.value.trim();
+    saveDraft('add', f.amount || name
+      ? { id: f.id, amount: f.amount, merchant: name, category: f.category, cardId: f.cardId, method: f.method, date: f.date, fcy: f.fcy }
+      : null).catch(() => {});
+  };
 
   const display = h('output', { class: 'pad-display', 'aria-live': 'polite' });
   const saveButton = h('button', { type: 'submit', class: 'button primary save' });
@@ -30,32 +39,33 @@ export function renderAdd(root, { go }) {
     const after = f.from === 'last' ? ', like last time' : '';
     fill(summary,
       h('span', {}, why, h('strong', {}, shortName(state.cardsById[f.cardId])), `, ${methodPhrase(f.method)}${after}`),
-      h('button', { type: 'button', class: 'change', onclick: () => document.getElementById('add-details').scrollIntoView({ behavior: 'smooth' }) }, 'Change'));
+      h('button', { type: 'button', class: 'change', onclick: () => document.getElementById('add-details').scrollIntoView({ behavior: scrollBehaviour() }) }, 'Change'));
   };
   const merchantInput = h('input', {
     type: 'text', placeholder: 'Merchant', autocomplete: 'off', autocapitalize: 'words',
-    oninput: () => { pickMerchant(findMerchant(merchantInput.value)); picker.render(); },
+    oninput: () => { pickMerchant(findMerchant(merchantInput.value)); picker.render(); keep(); },
   });
-  const picker = merchantChips({ input: merchantInput, onPick: (m) => pickMerchant(m) });
+  const picker = merchantChips({ input: merchantInput, onPick: (m) => { pickMerchant(m); keep(); } });
   const cardChips = chips({
     name: 'card', label: 'Card', value: f.cardId,
     options: state.myCards.map((c) => ({ value: c.cardId, label: shortName(state.cardsById[c.cardId]) })),
-    onChange: (v) => { f.cardId = v; f.from = null; renderSummary(); },
+    onChange: (v) => { f.cardId = v; f.from = null; renderSummary(); keep(); },
   });
   const methodChips = chips({
     name: 'method', label: 'How you paid', value: f.method,
     options: ALL_METHODS.map((m) => ({ value: m, label: METHOD_NAMES[m] })),
-    onChange: (v) => { f.method = v; f.from = null; renderSummary(); },
+    onChange: (v) => { f.method = v; f.from = null; renderSummary(); keep(); },
   });
   const categoryInput = categorySelect(state.categories, f.category, {
     onchange: () => {
       f.category = categoryInput.value;
       const channel = state.categoriesById[f.category]?.channel;
       if (channel && !CHANNELS[channel].methods.includes(f.method)) setMethod(CHANNELS[channel].methods[0]);
+      keep();
     },
   });
-  const dateInput = h('input', { type: 'date', value: f.date, max: today(), onchange: () => { f.date = dateInput.value || today(); } });
-  const fcyInput = h('input', { type: 'checkbox', onchange: () => { f.fcy = fcyInput.checked; } });
+  const dateInput = h('input', { type: 'date', value: f.date, max: today(), onchange: () => { f.date = dateInput.value || today(); keep(); } });
+  const fcyInput = h('input', { type: 'checkbox', onchange: () => { f.fcy = fcyInput.checked; keep(); } });
 
   const setMethod = (m) => { f.method = m; methodChips.set(m); renderSummary(); };
   const setCard = (id) => { if (state.myCards.some((c) => c.cardId === id)) { f.cardId = id; cardChips.set(id); renderSummary(); } };
@@ -99,6 +109,7 @@ export function renderAdd(root, { go }) {
     else a = a === '0' ? key : a + key;
     f.amount = a;
     renderAmount();
+    keep();
   }
 
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
@@ -110,8 +121,10 @@ export function renderAdd(root, { go }) {
   async function save(e) {
     e.preventDefault();
     if (!(Number(f.amount) > 0) || !f.merchant) return;
+    saveButton.disabled = true;
     const txn = await saveTxn({ ...f, merchant: f.merchant.name, amount: Number(f.amount) });
-    toast(`Saved ${money(txn.amount)} at ${txn.merchant}`, { label: 'Undo', run: async () => { await deleteTxn(txn.id); toast('Removed'); picker.render(); } });
+    f.id = newId();
+    toast(`Saved ${money(txn.amount)} at ${txn.merchant}`, { label: 'Undo', run: async () => { await deleteTxn(txn.id); toast(`Deleted ${money(txn.amount)} at ${txn.merchant}`); picker.render(); } });
     // Card, method and date stay for a run of purchases; merchant details don't carry over.
     f.amount = '';
     f.merchant = null;
@@ -124,6 +137,21 @@ export function renderAdd(root, { go }) {
     renderAmount();
     renderSummary();
     picker.render();
+    keep();
+  }
+
+  // Back from a draft: what was typed, then the card and method she chose over the merchant's usual ones.
+  const draft = loadDraft('add');
+  if (draft) {
+    Object.assign(f, { id: draft.id || f.id, amount: draft.amount || '', date: draft.date || f.date, fcy: !!draft.fcy });
+    dateInput.value = f.date;
+    fcyInput.checked = f.fcy;
+    merchantInput.value = draft.merchant || '';
+    pickMerchant(findMerchant(merchantInput.value));
+    picker.render();
+    if (draft.category) { f.category = draft.category; categoryInput.value = draft.category; }
+    if (draft.cardId && draft.cardId !== f.cardId && state.myCards.some((c) => c.cardId === draft.cardId)) { f.from = null; setCard(draft.cardId); }
+    if (draft.method && draft.method !== f.method) { f.from = null; setMethod(draft.method); }
   }
 
   renderAmount();

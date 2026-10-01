@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Only the app's own files: no outside scripts, styles or services. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="theme-color" content="#FCF3F6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1B1016" media="(prefers-color-scheme: dark)">
   <meta name="mobile-web-app-capable" content="yes">
